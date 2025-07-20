@@ -227,7 +227,7 @@ const IngredientSelector = ({
               borderRadius="md"
               overflow="hidden"
             >
-              <Box overflowX="auto">
+              <Box>
                 <Table size="sm">
                   <Thead bg="gray.50">
                     <Tr>

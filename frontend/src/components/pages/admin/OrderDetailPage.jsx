@@ -35,7 +35,13 @@ import {
 } from "@chakra-ui/react";
 import { FiArrowLeft, FiEdit, FiClock } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
-import { formatDate } from "../../../utils/formatters";
+import { formatDate, formatCurrency } from "../../../utils/formatters";
+import {
+  getStatusColor,
+  getStatusLabel,
+  getPaymentStatusColor,
+  getPaymentStatusLabel,
+} from "../../../utils/orderHelpers";
 
 import Page from "../../common/Page";
 import OrderStatusHistory from "../../molecules/OrderStatusHistory";
@@ -56,11 +62,14 @@ const OrderDetailPage = () => {
 
   // Fetch order details
   const {
-    data: orderData,
+    data: order,
     isLoading: isLoadingOrder,
     error: orderError,
     refetch: refetchOrder,
-  } = useFetchApi(`/admin/orders/${id}`);
+  } = useFetchApi({
+    url: `/admin/orders/${id}`,
+    protected: true,
+  });
 
   // Fetch order statuses
   const { data: statusesData } = useFetchApi({
@@ -70,38 +79,11 @@ const OrderDetailPage = () => {
 
   // Update order status mutation
   const { mutate: updateOrderStatus, isLoading: isUpdatingStatus } = useEditApi(
-    `/admin/orders/${id}/status`
+    {
+      url: `/admin/orders/${id}/status`,
+      protected: true,
+    }
   );
-
-  // Get status color
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "yellow",
-      processing: "blue",
-      completed: "green",
-      cancelled: "red",
-    };
-    return colors[status] || "gray";
-  };
-
-  // Get status label
-  const getStatusLabel = (status) => {
-    const labels = {
-      pending: "Chờ xử lý",
-      processing: "Đang xử lý",
-      completed: "Đã xử lý",
-      cancelled: "Đã hủy",
-    };
-    return labels[status] || status;
-  };
-
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   // Handle status update
   const handleStatusUpdate = async () => {
@@ -156,8 +138,6 @@ const OrderDetailPage = () => {
     );
   }
 
-  const order = orderData?.data;
-
   if (!order) {
     return (
       <Page title="Chi tiết đơn hàng">
@@ -173,6 +153,7 @@ const OrderDetailPage = () => {
   }
 
   const statuses = statusesData?.data || [];
+  const headings = ["Sản phẩm", "Số lượng", "Đơn giá", "Thành tiền", "Ghi chú"];
 
   return (
     <>
@@ -260,17 +241,17 @@ const OrderDetailPage = () => {
                   <Table variant="simple">
                     <Thead>
                       <Tr>
-                        <Th>Sản phẩm</Th>
-                        <Th>Số lượng</Th>
-                        <Th>Đơn giá</Th>
-                        <Th>Thành tiền</Th>
-                        <Th>Ghi chú</Th>
+                        {headings.map((heading) => (
+                          <Th p="2" key={heading}>
+                            {heading}
+                          </Th>
+                        ))}
                       </Tr>
                     </Thead>
                     <Tbody>
                       {order.items?.map((item, index) => (
                         <Tr key={index}>
-                          <Td>
+                          <Td p="2">
                             <VStack align="start" spacing={1}>
                               <Text fontWeight="medium">
                                 {item.product_name}
@@ -354,13 +335,9 @@ const OrderDetailPage = () => {
                       Trạng thái thanh toán
                     </Text>
                     <Badge
-                      colorScheme={
-                        order.payment_status === "paid" ? "green" : "yellow"
-                      }
+                      colorScheme={getPaymentStatusColor(order.payment_status)}
                     >
-                      {order.payment_status === "paid"
-                        ? "Đã thanh toán"
-                        : "Chưa thanh toán"}
+                      {getPaymentStatusLabel(order.payment_status)}
                     </Badge>
                   </VStack>
                   {order.discount_code && (

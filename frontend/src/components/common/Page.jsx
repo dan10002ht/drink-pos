@@ -14,7 +14,7 @@ const Page = ({
 }) => {
   const fullWidthProps = fullWidth
     ? { w: "100%" }
-    : { w: "100%", maxW: "1000px", m: "auto" };
+    : { w: "100%", maxW: "1280px", m: "auto" };
 
   const actionBarPadding =
     hasActionBar && isDirty ? { pb: { base: "100px", md: "60px" } } : {};

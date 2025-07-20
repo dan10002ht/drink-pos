@@ -56,7 +56,7 @@ const DashboardLayout = () => {
         <Sidebar />
 
         {/* Main Content */}
-        <Box flex="1" p={6} pb={{ base: "80px", md: "6" }}>
+        <Box flex="1" p={6} pb={{ base: "80px", md: "6" }} w="100%">
           <Outlet />
         </Box>
       </Flex>

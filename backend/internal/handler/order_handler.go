@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -71,6 +72,7 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 	// Get order
 	order, err := h.orderService.GetOrderByID(c.Request.Context(), publicID)
 	if err != nil {
+		fmt.Println(err)
 		response.NotFound(c, "Order not found")
 		return
 	}

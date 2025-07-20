@@ -152,3 +152,37 @@ export const formatTimeOnly = (date) => {
     return "N/A";
   }
 };
+
+/**
+ * Format time ago (relative time)
+ * @param {string|Date} dateString - The date to format
+ * @returns {string} Formatted relative time string
+ */
+export const formatTimeAgo = (dateString) => {
+  if (!dateString) {
+    return "N/A";
+  }
+
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+
+    if (isNaN(date.getTime())) {
+      return "N/A";
+    }
+
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+    if (diffInMinutes < 1) return "Vừa xong";
+    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} giờ trước`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} ngày trước`;
+  } catch (error) {
+    console.error("Error formatting time ago:", error);
+    return "N/A";
+  }
+};
