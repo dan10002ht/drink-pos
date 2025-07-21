@@ -61,7 +61,14 @@ const EditOrderContent = () => {
       }
 
       try {
-        await updateOrder(formData);
+        await updateOrder({
+          ...formData,
+          items: formData.items.map((item) => ({
+            ...item,
+            unit_price: item.unit_price || 0,
+            total_price: item.unit_price * item.quantity || 0,
+          })),
+        });
         return true;
       } catch {
         return false;
@@ -74,36 +81,15 @@ const EditOrderContent = () => {
 
   // Load order data when fetched
   useEffect(() => {
-    if (orderData?.data) {
-      const order = orderData.data;
-      const orderFormData = {
-        customer_name: order.customer_name || "",
-        customer_phone: order.customer_phone || "",
-        customer_email: order.customer_email || "",
-        payment_method: order.payment_method || "cash",
-        discount_code: order.discount_code || "",
-        discount_note: order.discount_note || "",
-        notes: order.notes || "",
-        items: order.items?.map((item) => ({
-          variant_id: item.variant_id || "",
-          quantity: item.quantity || 1,
-          notes: item.notes || "",
-        })) || [
-          {
-            variant_id: "",
-            quantity: 1,
-            notes: "",
-          },
-        ],
-      };
-      setFormData(orderFormData);
-      setInitialData(orderFormData);
+    if (orderData) {
+      setFormData(order);
+      setInitialData(order);
     }
   }, [orderData, setFormData, setInitialData]);
 
   // Check dirty state when form changes
   useEffect(() => {
-    if (orderData?.data) {
+    if (orderData) {
       const isDirtyState = checkDirty(formData);
       if (isDirtyState !== isDirty) {
         if (isDirtyState) {
@@ -115,9 +101,9 @@ const EditOrderContent = () => {
     }
   }, [formData, orderData, checkDirty, isDirty, markAsDirty, markAsClean]);
 
-  const order = orderData?.data;
+  const order = orderData;
   const products = productsData?.products || [];
-  const paymentMethods = paymentMethodsData?.data || [];
+  const paymentMethods = paymentMethodsData || [];
 
   return (
     <OrderMutationContent

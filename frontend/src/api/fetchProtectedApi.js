@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getToken, handleAuthError } from "../utils/auth";
+console.log(import.meta.env.VITE_API_URL);
 
 const protectedApi = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",

@@ -507,6 +507,119 @@ func (r *OrderRepository) applyDiscountCode(ctx context.Context, tx *sqlx.Tx, or
 	return nil
 }
 
+// UpdateOrder updates an existing order and its items
+func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req *model.UpdateOrderRequest, userID string) (*model.Order, error) {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// 1. Lấy order id từ public_id
+	var orderID string
+	err = tx.QueryRowContext(ctx, "SELECT id FROM orders WHERE public_id = $1", publicID).Scan(&orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Update bảng orders
+	updateOrderQuery := `
+		UPDATE orders SET
+			customer_name = $1, customer_phone = $2, customer_email = $3,
+			payment_method = $4, discount_code = $5, discount_note = $6, notes = $7,
+			updated_by = $8, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $9
+	`
+	_, err = tx.ExecContext(ctx, updateOrderQuery,
+		req.CustomerName, req.CustomerPhone, req.CustomerEmail,
+		req.PaymentMethod, req.DiscountCode, req.DiscountNote, req.Notes,
+		userID, orderID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Lấy danh sách order_items cũ
+	rows, err := tx.QueryContext(ctx, "SELECT id FROM order_items WHERE order_id = $1", orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	oldItemIDs := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err == nil {
+			oldItemIDs[id] = true
+		}
+	}
+
+	// 4. Xử lý items mới
+	newItemIDs := map[string]bool{}
+	for _, item := range req.Items {
+		if item.ID != "" {
+			// Update
+			// Lấy unit_price hiện tại của item
+			var unitPrice float64
+			err := tx.QueryRowContext(ctx, "SELECT unit_price FROM order_items WHERE id = $1", item.ID).Scan(&unitPrice)
+			if err != nil {
+				return nil, err
+			}
+			totalPrice := float64(item.Quantity) * unitPrice
+			updateItemQuery := `
+				UPDATE order_items SET
+					quantity = $1, notes = $2, total_price = $3, updated_at = CURRENT_TIMESTAMP
+				WHERE id = $4 AND order_id = $5
+			`
+			_, err = tx.ExecContext(ctx, updateItemQuery, item.Quantity, item.Notes, totalPrice, item.ID, orderID)
+			if err != nil {
+				return nil, err
+			}
+			newItemIDs[item.ID] = true
+		} else {
+			// Insert
+			var variantID, productName, variantName string
+			var unitPrice float64
+			err := tx.QueryRowContext(ctx, `
+				SELECT v.id, v.name, v.price, p.name
+				FROM variants v JOIN products p ON v.product_id = p.id
+				WHERE v.public_id = $1
+			`, item.VariantID).Scan(&variantID, &variantName, &unitPrice, &productName)
+			if err != nil {
+				return nil, err
+			}
+			totalPrice := unitPrice * float64(item.Quantity)
+			insertItemQuery := `
+				INSERT INTO order_items (order_id, variant_id, product_name, variant_name, quantity, unit_price, total_price, notes)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			`
+			_, err = tx.ExecContext(ctx, insertItemQuery,
+				orderID, variantID, productName, variantName, item.Quantity, unitPrice, totalPrice, item.Notes,
+			)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// 5. Xoá các item cũ không còn trong danh sách mới
+	for oldID := range oldItemIDs {
+		if !newItemIDs[oldID] {
+			_, err := tx.ExecContext(ctx, "DELETE FROM order_items WHERE id = $1", oldID)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// 6. Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// 7. Trả về order mới nhất
+	return r.GetOrderByID(ctx, publicID)
+}
+
 // GetOrderStatistics gets order statistics
 func (r *OrderRepository) GetOrderStatistics(ctx context.Context, startDate, endDate *time.Time) (*model.OrderStatistics, error) {
 	// Build date filter

@@ -157,7 +157,7 @@ const BottomNavigation = () => {
               flexDirection="column"
               h="auto"
               py={4}
-              px={3}
+              px={{ base: 2, md: 3 }}
               minW="auto"
               _focus={{
                 outline: "none",

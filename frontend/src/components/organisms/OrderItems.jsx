@@ -59,17 +59,32 @@ const OrderItems = ({ products = [] }) => {
                   <Text fontSize="sm" fontWeight="medium" mb={2}>
                     Sản phẩm *
                   </Text>
-                  <Combobox
-                    value={item.variant_id}
-                    onChange={(value) =>
-                      handleItemChange(index, "variant_id", value)
-                    }
-                    placeholder="Tìm kiếm sản phẩm..."
-                    options={variantOptions}
-                    getOptionLabel={(option) => option.label}
-                    getOptionValue={(option) => option.id}
-                    isInvalid={!!errors.items?.[index]?.variant_id}
-                  />
+                  {item.id ? (
+                    <Box
+                      py={2}
+                      px={3}
+                      bg="gray.50"
+                      borderRadius="md"
+                      borderWidth={1}
+                      borderColor="gray.200"
+                    >
+                      <Text fontWeight="semibold">
+                        {item.product_name} - {item.variant_name}
+                      </Text>
+                    </Box>
+                  ) : (
+                    <Combobox
+                      value={item.variant_id}
+                      onChange={(value) =>
+                        handleItemChange(index, "variant_id", value)
+                      }
+                      placeholder="Tìm kiếm sản phẩm..."
+                      options={variantOptions}
+                      getOptionLabel={(option) => option.label}
+                      getOptionValue={(option) => option.id}
+                      isInvalid={!!errors.items?.[index]?.variant_id}
+                    />
+                  )}
                   {errors.items?.[index]?.variant_id && (
                     <Text fontSize="sm" color="red.500" mt={1}>
                       {errors.items[index].variant_id}
@@ -132,28 +147,34 @@ const OrderItems = ({ products = [] }) => {
                     <HStack justify="space-between">
                       <VStack align="start" spacing={1}>
                         <Text fontSize="sm" fontWeight="medium">
-                          {
-                            getVariantInfo(item.variant_id, products)
-                              ?.product_name
-                          }{" "}
-                          -{" "}
-                          {
-                            getVariantInfo(item.variant_id, products)
-                              ?.variant_name
-                          }
+                          {item.id
+                            ? `${item.product_name || ""} - ${
+                                item.variant_name || ""
+                              }`
+                            : `${
+                                getVariantInfo(item.variant_id, products)
+                                  ?.product_name || ""
+                              } - ${
+                                getVariantInfo(item.variant_id, products)
+                                  ?.variant_name || ""
+                              }`}
                         </Text>
                         <Text fontSize="sm" color="gray.600">
                           {formatCurrency(
-                            getVariantInfo(item.variant_id, products)?.price ||
-                              0
+                            item.id
+                              ? item.unit_price || 0
+                              : getVariantInfo(item.variant_id, products)
+                                  ?.price || 0
                           )}{" "}
                           x {item.quantity}
                         </Text>
                       </VStack>
                       <Text fontSize="sm" fontWeight="medium">
                         {formatCurrency(
-                          (getVariantInfo(item.variant_id, products)?.price ||
-                            0) * item.quantity
+                          (item.id
+                            ? item.unit_price || 0
+                            : getVariantInfo(item.variant_id, products)
+                                ?.price || 0) * item.quantity
                         )}
                       </Text>
                     </HStack>

@@ -92,16 +92,7 @@ const ProductsContainer = () => {
     navigate(`/admin/products/${productId}`);
   };
 
-  const handleDeleteProduct = () => {
-    // TODO: Implement delete functionality
-    toast({
-      title: "Xóa sản phẩm",
-      description: "Tính năng xóa sản phẩm sẽ được implement sau",
-      status: "info",
-      duration: 3000,
-      isClosable: true,
-    });
-  };
+  const handleDeleteProduct = () => {};
 
   const handleRetry = () => {
     refetch();

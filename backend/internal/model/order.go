@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -44,11 +45,11 @@ type Order struct {
 	DiscountAmount float64      `json:"discount_amount" db:"discount_amount"`
 	DiscountType  *DiscountType `json:"discount_type" db:"discount_type"`
 	DiscountCode  string        `json:"discount_code" db:"discount_code"`
-	DiscountNote  string        `json:"discount_note" db:"discount_note"`
+	DiscountNote  sql.NullString        `json:"discount_note" db:"discount_note"`
 	TotalAmount   float64       `json:"total_amount" db:"total_amount"`
 	PaymentMethod string        `json:"payment_method" db:"payment_method"`
 	PaymentStatus PaymentStatus `json:"payment_status" db:"payment_status"`
-	Notes         string        `json:"notes" db:"notes"`
+	Notes         sql.NullString        `json:"notes" db:"notes"`
 	ShipperID     *string       `json:"shipper_id" db:"shipper_id"`
 	CreatedBy     string        `json:"created_by" db:"created_by"`
 	UpdatedBy     string        `json:"updated_by" db:"updated_by"`
@@ -73,7 +74,7 @@ type OrderItem struct {
 	Quantity    int       `json:"quantity" db:"quantity"`
 	UnitPrice   float64   `json:"unit_price" db:"unit_price"`
 	TotalPrice  float64   `json:"total_price" db:"total_price"`
-	Notes       string    `json:"notes" db:"notes"`
+	Notes       sql.NullString    `json:"notes" db:"notes"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
 	
@@ -87,7 +88,7 @@ type OrderStatusHistory struct {
 	OrderID       string      `json:"-" db:"order_id"`
 	Status        OrderStatus `json:"status" db:"status"`
 	PreviousStatus *OrderStatus `json:"previous_status" db:"previous_status"`
-	Notes         string      `json:"notes" db:"notes"`
+	Notes         sql.NullString      `json:"notes" db:"notes"`
 	ChangedBy     string      `json:"changed_by" db:"changed_by"`
 	CreatedAt     time.Time   `json:"created_at" db:"created_at"`
 	

@@ -61,6 +61,105 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	response.SuccessWithStatus(c, http.StatusCreated, "Order created successfully", order)
 }
 
+// Thêm struct response
+
+type OrderItemResponse struct {
+	ID          string  `json:"id"`
+	VariantID   string  `json:"variant_id"`
+	ProductName string  `json:"product_name"`
+	VariantName string  `json:"variant_name"`
+	Quantity    int     `json:"quantity"`
+	UnitPrice   float64 `json:"unit_price"`
+	TotalPrice  float64 `json:"total_price"`
+	Notes       *string `json:"notes"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+type OrderResponse struct {
+	ID            string  `json:"id"`
+	OrderNumber   string  `json:"order_number"`
+	CustomerName  string  `json:"customer_name"`
+	CustomerPhone string  `json:"customer_phone"`
+	CustomerEmail string  `json:"customer_email"`
+	Status        string  `json:"status"`
+	Subtotal      float64 `json:"subtotal"`
+	DiscountAmount float64 `json:"discount_amount"`
+	DiscountType  *string `json:"discount_type"`
+	DiscountCode  string  `json:"discount_code"`
+	DiscountNote  *string `json:"discount_note"`
+	TotalAmount   float64 `json:"total_amount"`
+	PaymentMethod string  `json:"payment_method"`
+	PaymentStatus string  `json:"payment_status"`
+	Notes         *string `json:"notes"`
+	CreatedBy     string  `json:"created_by"`
+	UpdatedBy     string  `json:"updated_by"`
+	CreatedAt     string  `json:"created_at"`
+	UpdatedAt     string  `json:"updated_at"`
+	Items         []OrderItemResponse `json:"items"`
+	// ... có thể bổ sung các trường khác nếu cần ...
+}
+
+func toOrderItemResponse(item model.OrderItem) OrderItemResponse {
+	var notesPtr *string
+	if item.Notes.Valid {
+		notesPtr = &item.Notes.String
+	}
+	return OrderItemResponse{
+		ID:          item.ID,
+		VariantID:   item.VariantID,
+		ProductName: item.ProductName,
+		VariantName: item.VariantName,
+		Quantity:    item.Quantity,
+		UnitPrice:   item.UnitPrice,
+		TotalPrice:  item.TotalPrice,
+		Notes:       notesPtr,
+		CreatedAt:   item.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   item.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+func toOrderResponse(order *model.Order) *OrderResponse {
+	var notesPtr, discountNotePtr *string
+	if order.Notes.Valid {
+		notesPtr = &order.Notes.String
+	}
+	if order.DiscountNote.Valid {
+		discountNotePtr = &order.DiscountNote.String
+	}
+	var discountTypePtr *string
+	if order.DiscountType != nil {
+		discountTypeStr := string(*order.DiscountType)
+		discountTypePtr = &discountTypeStr
+	}
+	items := make([]OrderItemResponse, 0, len(order.Items))
+	for _, item := range order.Items {
+		items = append(items, toOrderItemResponse(item))
+	}
+	return &OrderResponse{
+		ID:            order.PublicID,
+		OrderNumber:   order.OrderNumber,
+		CustomerName:  order.CustomerName,
+		CustomerPhone: order.CustomerPhone,
+		CustomerEmail: order.CustomerEmail,
+		Status:        string(order.Status),
+		Subtotal:      order.Subtotal,
+		DiscountAmount: order.DiscountAmount,
+		DiscountType:  discountTypePtr,
+		DiscountCode:  order.DiscountCode,
+		DiscountNote:  discountNotePtr,
+		TotalAmount:   order.TotalAmount,
+		PaymentMethod: order.PaymentMethod,
+		PaymentStatus: string(order.PaymentStatus),
+		Notes:         notesPtr,
+		CreatedBy:     order.CreatedBy,
+		UpdatedBy:     order.UpdatedBy,
+		CreatedAt:     order.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:     order.UpdatedAt.Format(time.RFC3339),
+		Items:         items,
+	}
+}
+
 // GetOrderByID gets order by public ID
 func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 	publicID := c.Param("id")
@@ -77,7 +176,47 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, order, "Order retrieved successfully")
+	response.Success(c, toOrderResponse(order), "Order retrieved successfully")
+}
+
+// UpdateOrder updates an order and its items
+func (h *OrderHandler) UpdateOrder(c *gin.Context) {
+	publicID := c.Param("id")
+	if publicID == "" {
+		response.BadRequest(c, "Order ID is required")
+		return
+	}
+
+	var req model.UpdateOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request data")
+		return
+	}
+
+	if len(req.Items) == 0 {
+		response.BadRequest(c, "Phải có ít nhất 1 sản phẩm trong đơn hàng")
+		return
+	}
+	for _, item := range req.Items {
+		if item.Quantity <= 0 {
+			response.BadRequest(c, "Số lượng sản phẩm phải lớn hơn 0")
+			return
+		}
+	}
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+
+	order, err := h.orderService.UpdateOrder(c.Request.Context(), publicID, &req, userID.(string))
+	if err != nil {
+		response.InternalServerError(c, "Failed to update order: "+err.Error())
+		return
+	}
+
+	response.Success(c, toOrderResponse(order), "Order updated successfully")
 }
 
 // UpdateOrderStatus updates order status

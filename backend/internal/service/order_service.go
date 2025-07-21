@@ -59,6 +59,11 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, publicID string, r
 	return order, nil
 }
 
+// UpdateOrder updates an existing order
+func (s *OrderService) UpdateOrder(ctx context.Context, publicID string, req *model.UpdateOrderRequest, userID string) (*model.Order, error) {
+	return s.orderRepo.UpdateOrder(ctx, publicID, req, userID)
+}
+
 // ListOrders lists orders with filtering and pagination
 func (s *OrderService) ListOrders(ctx context.Context, req *model.ListOrdersRequest) (*model.ListOrdersResponse, error) {
 	// Set default values

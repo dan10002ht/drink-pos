@@ -124,9 +124,107 @@ stop_containers() {
     print_success "Stopped existing containers"
 }
 
+# Function to start Cloudflare Tunnel for a port
+start_cloudflared_tunnel() {
+    local port=$1
+    local name=$2
+    local log_file=$3
+    print_status "Starting Cloudflare Tunnel for $name (port $port)..."
+    cloudflared tunnel --url http://localhost:$port > $log_file 2>&1 &
+    TUNNEL_PID=$!
+    echo $TUNNEL_PID > .$name-tunnel.pid
+    print_success "Cloudflare Tunnel for $name started (PID: $TUNNEL_PID)"
+    # Chờ URL xuất hiện (tối đa 30s)
+    local url=$(wait_for_tunnel_url $log_file 30)
+    if [ ! -z "$url" ]; then
+        print_success "$name Tunnel URL: $url"
+    else
+        print_warning "Could not detect $name tunnel URL after waiting. Check $log_file later."
+    fi
+}
+
+# Wait for tunnel URL to appear in log (timeout 30s)
+wait_for_tunnel_url() {
+    local log_file=$1
+    local timeout=${2:-30}
+    local waited=0
+    local url=""
+    while [ $waited -lt $timeout ]; do
+        url=$(grep -m 1 -o 'https://[a-zA-Z0-9.-]*trycloudflare.com' "$log_file" | head -n1)
+        if [ ! -z "$url" ]; then
+            echo "$url"
+            return 0
+        fi
+        sleep 1
+        waited=$((waited+1))
+    done
+    return 1
+}
+
+# Function to update VITE_API_URL in frontend/.env
+update_fe_env_api_url() {
+    local be_url=$(wait_for_tunnel_url tunnel-be.log 30)
+    if [ ! -z "$be_url" ]; then
+        if [ -f "frontend/.env" ]; then
+            sed -i '/^VITE_API_URL=/d' frontend/.env
+        fi
+        echo "VITE_API_URL=${be_url}/api" >> frontend/.env
+        print_success "Updated frontend/.env with VITE_API_URL=${be_url}/api"
+    else
+        print_warning "Could not update .env: BE tunnel URL not found."
+    fi
+}
+
+# Function to update VITE_TUNNEL_DOMAIN in frontend/.env
+update_fe_env_tunnel_domain() {
+    local fe_url=$(wait_for_tunnel_url tunnel-fe.log 30)
+    if [ ! -z "$fe_url" ]; then
+        local domain=$(echo "$fe_url" | sed -E 's#https://([^/]+).*#\1#')
+        if [ -f "frontend/.env" ]; then
+            sed -i '/^VITE_TUNNEL_DOMAIN=/d' frontend/.env
+        fi
+        echo "VITE_TUNNEL_DOMAIN=$domain" >> frontend/.env
+        print_success "Updated frontend/.env with VITE_TUNNEL_DOMAIN=$domain"
+    else
+        print_warning "Could not update .env: FE tunnel domain not found."
+    fi
+}
+
+# Function to update .env for local mode
+update_fe_env_local() {
+    if [ -f "frontend/.env" ]; then
+        sed -i '/^VITE_API_URL=/d' frontend/.env
+        sed -i '/^VITE_TUNNEL_DOMAIN=/d' frontend/.env
+    fi
+    echo "VITE_API_URL=http://localhost:8080/api" >> frontend/.env
+    echo "VITE_TUNNEL_DOMAIN=localhost" >> frontend/.env
+    print_success "Updated frontend/.env with local API and tunnel domain"
+}
+
+# Function to print sticky tunnel URLs at the end
+print_sticky_tunnel_urls() {
+    local be_url=""
+    local fe_url=""
+    local waited=0
+    local timeout=60 # tổng thời gian chờ tối đa (giây)
+    while [ $waited -lt $timeout ]; do
+        be_url=$(grep -m 1 -o 'https://[a-zA-Z0-9.-]*trycloudflare.com' tunnel-be.log | head -n1)
+        fe_url=$(grep -m 1 -o 'https://[a-zA-Z0-9.-]*trycloudflare.com' tunnel-fe.log | head -n1)
+        if [ ! -z "$be_url" ] && [ ! -z "$fe_url" ]; then
+            break
+        fi
+        sleep 1
+        waited=$((waited+1))
+    done
+    echo -e "\n==============================="
+    echo -e "🌐 Backend Tunnel URL: ${be_url:-'(not found)'}"
+    echo -e "🌐 Frontend Tunnel URL: ${fe_url:-'(not found)'}"
+    echo -e "===============================\n"
+}
+
 # Function to start development environment
 start_dev_environment() {
-    print_status "Starting development environment..."
+    print_status "Starting development environment in mode: $MODE"
     
     # Kill any processes using development ports
     kill_development_ports
@@ -151,14 +249,24 @@ start_dev_environment() {
     run_migrations
     seed_database
     
-    # Start backend with hot reload
+    if [ "$MODE" = "tunnel" ]; then
+        start_cloudflared_tunnel 8080 "backend" tunnel-be.log
+        update_fe_env_api_url
+        start_cloudflared_tunnel 5173 "frontend" tunnel-fe.log
+        update_fe_env_tunnel_domain
+    fi
+    if [ "$MODE" = "local" ]; then
+        update_fe_env_local
+    fi
+    # Start backend với hot reload
     print_status "Starting backend with hot reload..."
     start_backend_npm
-    
-    # Start frontend with npm
+    # Start frontend với npm
     print_status "Starting frontend with npm..."
     start_frontend_npm
-    
+    if [ "$MODE" = "tunnel" ]; then
+        print_sticky_tunnel_urls
+    fi
     print_success "Development environment started successfully!"
 }
 
@@ -369,6 +477,8 @@ cleanup() {
 }
 
 # Main script
+MODE="${1:-local}"
+
 main() {
     echo ""
     echo "🍽️  3 O'CLOCK Development Environment Setup"
@@ -443,24 +553,25 @@ case "${1:-}" in
         kill_development_ports
         ;;
     "help"|"-h"|"--help")
-        echo "Usage: ./dev-local.sh [command]"
+        echo "Usage: ./dev-local.sh [local|tunnel|command]"
         echo ""
         echo "Commands:"
-        echo "  (no args)  - Start development environment"
-        echo "  logs       - Show logs"
-        echo "  stop       - Stop all services"
-        echo "  restart    - Restart all services"
-        echo "  status     - Show service status"
-        echo "  cleanup    - Clean up everything"
-        echo "  migrate    - Run database migrations"
-        echo "  rollback   - Rollback database migrations"
-        echo "  seed       - Seed database"
-        echo "  killports  - Kill processes on development ports"
-        echo "  help       - Show this help"
+        echo "  local     - Start dev environment WITHOUT tunnel (pure local)"
+        echo "  tunnel    - Start dev environment WITH Cloudflare tunnel (default)"
+        echo "  logs      - Show logs"
+        echo "  stop      - Stop all services"
+        echo "  restart   - Restart all services"
+        echo "  status    - Show service status"
+        echo "  cleanup   - Clean up everything"
+        echo "  migrate   - Run database migrations"
+        echo "  rollback  - Rollback database migrations"
+        echo "  seed      - Seed database"
+        echo "  killports - Kill processes on development ports"
+        echo "  help      - Show this help"
         echo ""
         echo "Note: Frontend runs with npm run dev, backend runs with Docker"
         ;;
-    "")
+    ""|"local"|"tunnel")
         main
         ;;
     *)

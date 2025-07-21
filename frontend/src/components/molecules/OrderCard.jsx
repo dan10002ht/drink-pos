@@ -8,40 +8,38 @@ import {
   Flex,
   IconButton,
   useColorModeValue,
+  Button,
 } from "@chakra-ui/react";
 import { FiEye, FiEdit } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency, formatTimeAgo } from "../../utils/formatters";
+import {
+  validTransitions,
+  getStatusLabel,
+  getStatusColor,
+} from "../../utils/orderHelpers";
+import { useEditApi } from "../../hooks/useEditApi";
+import { Spinner } from "@chakra-ui/react";
 
-const OrderCard = ({ order, status }) => {
+const OrderCard = ({ order, status, refetch }) => {
   const navigate = useNavigate();
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const itemBgColor = useColorModeValue("gray.50", "gray.700");
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "pending":
-        return "Chờ xử lý";
-      case "processing":
-        return "Đang xử lý";
-      case "completed":
-        return "Đã xử lý";
-      default:
-        return status;
+  // API đổi trạng thái
+  const { mutate: updateOrderStatus, isLoading: isUpdatingStatus } = useEditApi(
+    {
+      url: `/admin/orders/${order.id}/status`,
+      protected: true,
     }
-  };
+  );
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "yellow";
-      case "processing":
-        return "blue";
-      case "completed":
-        return "green";
-      default:
-        return "gray";
-    }
+  // Các trạng thái hợp lệ tiếp theo
+  const allowedStatuses = validTransitions[order.status] || [];
+
+  // Handler đổi trạng thái
+  const handleChangeStatus = (newStatus) => {
+    updateOrderStatus({ status: newStatus }, { onSuccess: refetch });
   };
 
   return (
@@ -109,6 +107,24 @@ const OrderCard = ({ order, status }) => {
             </Text>
           )}
         </HStack>
+
+        {/* Actions: chuyển trạng thái */}
+        {allowedStatuses.length > 0 && (
+          <HStack spacing={2} mt={2}>
+            {allowedStatuses.map((nextStatus) => (
+              <Button
+                key={nextStatus}
+                size="xs"
+                colorScheme={getStatusColor(nextStatus)}
+                variant="outline"
+                isLoading={isUpdatingStatus}
+                onClick={() => handleChangeStatus(nextStatus)}
+              >
+                {getStatusLabel(nextStatus)}
+              </Button>
+            ))}
+          </HStack>
+        )}
 
         {/* Actions */}
         <Flex justify="space-between" align="center">

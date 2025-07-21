@@ -126,7 +126,20 @@ export const OrderProvider = ({
       const itemsWithInfo = [];
 
       formData.items.forEach((item) => {
-        if (item.variant_id && item.quantity > 0) {
+        if (
+          item.id &&
+          typeof item.unit_price === "number" &&
+          typeof item.quantity === "number"
+        ) {
+          // Item đã lưu ở BE, tự tính lại total_price
+          const itemTotal = item.unit_price * item.quantity;
+          subtotal += itemTotal;
+          itemsWithInfo.push({
+            ...item,
+            total_price: itemTotal,
+          });
+        } else if (item.variant_id && item.quantity > 0) {
+          // Item mới, lookup từ products
           const variantInfo = getVariantInfo(item.variant_id, products);
           if (variantInfo) {
             const itemTotal = variantInfo.price * item.quantity;

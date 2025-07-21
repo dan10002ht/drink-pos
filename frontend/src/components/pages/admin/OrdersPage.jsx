@@ -147,7 +147,7 @@ const OrdersPage = () => {
   const orders = ordersData?.orders || [];
   const total = ordersData?.total || 0;
   const pages = ordersData?.pages || 1;
-  const statuses = statusesData?.data || [];
+  const statuses = statusesData || [];
 
   return (
     <Page

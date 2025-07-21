@@ -9,7 +9,6 @@ import {
   Badge,
   Button,
   Divider,
-  useToast,
   Skeleton,
   Alert,
   AlertIcon,
@@ -29,11 +28,23 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
-  useDisclosure,
   Select,
   Textarea,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverArrow,
+  PopoverBody,
+  PopoverHeader,
+  PopoverCloseButton,
+  MenuItem,
+  MenuList,
+  Menu,
+  MenuButton,
+  Spinner,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { FiArrowLeft, FiEdit, FiClock } from "react-icons/fi";
+import { FiArrowLeft, FiEdit, FiClock, FiChevronDown } from "react-icons/fi";
 import { useNavigate, useParams } from "react-router-dom";
 import { formatDate, formatCurrency } from "../../../utils/formatters";
 import {
@@ -41,19 +52,19 @@ import {
   getStatusLabel,
   getPaymentStatusColor,
   getPaymentStatusLabel,
+  validTransitions,
 } from "../../../utils/orderHelpers";
 
 import Page from "../../common/Page";
 import OrderStatusHistory from "../../molecules/OrderStatusHistory";
 import { useFetchApi } from "../../../hooks/useFetchApi";
 import { useEditApi } from "../../../hooks/useEditApi";
+import ActionList from "../../molecules/ActionList";
 
 const OrderDetailPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
-
   // State
   const [statusUpdate, setStatusUpdate] = useState({
     status: "",
@@ -84,26 +95,6 @@ const OrderDetailPage = () => {
       protected: true,
     }
   );
-
-  // Handle status update
-  const handleStatusUpdate = async () => {
-    try {
-      await updateOrderStatus(statusUpdate);
-      toast({
-        title: "Cập nhật thành công",
-        description: "Trạng thái đơn hàng đã được cập nhật",
-        status: "success",
-      });
-      onClose();
-      refetchOrder();
-    } catch {
-      toast({
-        title: "Lỗi",
-        description: "Không thể cập nhật trạng thái đơn hàng",
-        status: "error",
-      });
-    }
-  };
 
   // Loading state
   if (isLoadingOrder) {
@@ -152,8 +143,14 @@ const OrderDetailPage = () => {
     );
   }
 
-  const statuses = statusesData?.data || [];
+  const statuses = statusesData || [];
   const headings = ["Sản phẩm", "Số lượng", "Đơn giá", "Thành tiền", "Ghi chú"];
+
+  const currentStatus = statusUpdate.status || order.status || "";
+  const allowedStatuses = validTransitions[currentStatus] || [];
+  const statusOptions = statuses.filter(
+    (s) => s.value === currentStatus || allowedStatuses.includes(s.value)
+  );
 
   return (
     <>
@@ -164,11 +161,47 @@ const OrderDetailPage = () => {
           icon: FiArrowLeft,
           onClick: () => navigate("/admin/orders"),
         }}
-        primaryAction={{
-          label: "Cập nhật trạng thái",
-          icon: FiEdit,
-          onClick: onOpen,
-        }}
+        actions={
+          <Popover
+            isOpen={isOpen}
+            onClose={onClose}
+            closeOnBlur
+            placement="bottom-end"
+          >
+            <PopoverTrigger>
+              <Button
+                size={{ base: "xs", md: "md" }}
+                colorScheme="teal"
+                onClick={onOpen}
+                leftIcon={<FiEdit />}
+                rightIcon={<FiChevronDown />}
+              >
+                {getStatusLabel(statusUpdate.status || order.status) ||
+                  "Chưa có trạng thái"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent minW="200px">
+              <PopoverArrow />
+              <PopoverBody>
+                <ActionList
+                  actions={statusOptions.map((s) => ({
+                    value: s.value,
+                    label: getStatusLabel(s.value),
+                    color: getStatusColor(s.value),
+                  }))}
+                  current={currentStatus}
+                  onAction={async (value) => {
+                    setStatusUpdate((prev) => ({ ...prev, status: value }));
+                    await updateOrderStatus({ ...statusUpdate, status: value });
+                    refetchOrder();
+                    onClose();
+                  }}
+                />
+                {isUpdatingStatus && <Spinner size="sm" ml={2} />}
+              </PopoverBody>
+            </PopoverContent>
+          </Popover>
+        }
         secondaryAction={{
           label: "Chỉnh sửa",
           icon: FiEdit,
@@ -176,7 +209,6 @@ const OrderDetailPage = () => {
         }}
       >
         <VStack spacing={6} align="stretch">
-          {/* Order Header */}
           <Card>
             <CardBody>
               <VStack spacing={4} align="stretch">
@@ -197,7 +229,6 @@ const OrderDetailPage = () => {
             </CardBody>
           </Card>
 
-          {/* Customer Information */}
           <Card>
             <CardBody>
               <VStack spacing={4} align="stretch">
@@ -374,69 +405,6 @@ const OrderDetailPage = () => {
           </Card>
         </VStack>
       </Page>
-
-      {/* Status Update Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Cập nhật trạng thái đơn hàng</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={2}>
-                  Trạng thái mới
-                </Text>
-                <Select
-                  value={statusUpdate.status}
-                  onChange={(e) =>
-                    setStatusUpdate((prev) => ({
-                      ...prev,
-                      status: e.target.value,
-                    }))
-                  }
-                  placeholder="Chọn trạng thái"
-                >
-                  {statuses.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </Select>
-              </Box>
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={2}>
-                  Ghi chú (tùy chọn)
-                </Text>
-                <Textarea
-                  value={statusUpdate.notes}
-                  onChange={(e) =>
-                    setStatusUpdate((prev) => ({
-                      ...prev,
-                      notes: e.target.value,
-                    }))
-                  }
-                  placeholder="Ghi chú khi thay đổi trạng thái"
-                  rows={3}
-                />
-              </Box>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Hủy
-            </Button>
-            <Button
-              colorScheme="blue"
-              onClick={handleStatusUpdate}
-              isLoading={isUpdatingStatus}
-              isDisabled={!statusUpdate.status}
-            >
-              Cập nhật
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   );
 };

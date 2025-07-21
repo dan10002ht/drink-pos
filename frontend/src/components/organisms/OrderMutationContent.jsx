@@ -6,6 +6,10 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Select,
+  HStack,
+  Text,
+  Spinner,
 } from "@chakra-ui/react";
 import { FiX } from "react-icons/fi";
 
@@ -18,6 +22,7 @@ import OrderDiscount from "./OrderDiscount";
 import OrderNotes from "./OrderNotes";
 import OrderSummary from "./OrderSummary";
 import OrderInfo from "./OrderInfo";
+import { useFetchApi } from "../../hooks/useFetchApi";
 
 const OrderMutationContent = ({
   // Page props
@@ -47,8 +52,20 @@ const OrderMutationContent = ({
   // Mode
   mode = "create",
 }) => {
-  const { calculateTotals } = useOrderContext();
+  const { calculateTotals, formData, setFormData } = useOrderContext();
   const { subtotal, itemsWithInfo } = calculateTotals(products);
+
+  // Fetch order statuses (chỉ dùng cho edit)
+  const { data: statusesData, isLoading: isLoadingStatuses } = useFetchApi({
+    url: "/admin/orders/statuses",
+    protected: true,
+  });
+  const statuses = statusesData || [];
+
+  // Handler đổi trạng thái
+  const handleStatusChange = (e) => {
+    setFormData((prev) => ({ ...prev, status: e.target.value }));
+  };
 
   // Loading state
   if (isLoadingProducts || isLoadingOrder) {
@@ -106,8 +123,32 @@ const OrderMutationContent = ({
       >
         <VStack spacing={6} align="stretch">
           {/* Order Info - chỉ hiển thị trong edit mode */}
-          {mode === "edit" && order && <OrderInfo order={order} />}
-
+          <>
+            <OrderInfo order={order} />
+            <HStack spacing={4} align="center">
+              <Text fontWeight="medium">Trạng thái đơn hàng:</Text>
+              {isLoadingStatuses ? (
+                <Spinner size="sm" />
+              ) : (
+                <Select
+                  value={
+                    formData.status ||
+                    (mode === "create" ? "pending" : order?.status) ||
+                    ""
+                  }
+                  onChange={handleStatusChange}
+                  maxW="200px"
+                  size="sm"
+                >
+                  {statuses.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label || s.value}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </HStack>
+          </>
           {/* Common components */}
           <OrderCustomerInfo paymentMethods={paymentMethods} />
           <OrderItems products={products} />

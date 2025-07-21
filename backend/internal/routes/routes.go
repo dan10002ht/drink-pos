@@ -45,12 +45,13 @@ func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handle
 				adminProtected.GET("/variants/:variant_public_id/ingredients", ingredientHandler.GetVariantIngredients)
 				adminProtected.POST("/variants/:variant_public_id/ingredients", ingredientHandler.AddIngredientToVariant)
 				adminProtected.DELETE("/variants/:variant_public_id/ingredients/:ingredient_public_id", ingredientHandler.RemoveIngredientFromVariant)
-				adminProtected.GET("/variants/:variant_public_id/cost", ingredientHandler.CalculateVariantCost)
+				adminProtected.GET("/variants/:variant_public_id/cost", ingredientHandler.CalculateVariantCost)ại migration tạo trigger
 
 				// Order routes
 				adminProtected.POST("/orders", orderHandler.CreateOrder)
 				adminProtected.GET("/orders", orderHandler.ListOrders)
 				adminProtected.GET("/orders/:id", orderHandler.GetOrderByID)
+				adminProtected.PUT("/orders/:id", orderHandler.UpdateOrder)
 				adminProtected.PUT("/orders/:id/status", orderHandler.UpdateOrderStatus)
 				adminProtected.POST("/orders/validate-discount", orderHandler.ValidateDiscountCode)
 				adminProtected.GET("/orders/statuses", orderHandler.GetOrderStatuses)

@@ -18,6 +18,7 @@ import {
 import { useFetchApi } from "../../../hooks/useFetchApi";
 import OrderStatsCards from "../../molecules/OrderStatsCards";
 import OrderList from "../../organisms/OrderList";
+import Page from "../../common/Page";
 
 const OrderStatusPage = () => {
   const bgColor = useColorModeValue("white", "gray.800");
@@ -102,21 +103,19 @@ const OrderStatusPage = () => {
   ];
 
   return (
-    <Box>
+    <Page
+      title="Trạng thái đơn hàng"
+      subtitle="Quản lý và theo dõi tình trạng xử lý đơn hàng"
+    >
       <VStack spacing={6} align="stretch">
         {/* Header */}
-        <Box>
-          <Heading size="lg" mb={2}>
-            Trạng thái đơn hàng
-          </Heading>
+        {/* <Box>
           <Text color="gray.600">
             Quản lý và theo dõi tình trạng xử lý đơn hàng
           </Text>
-        </Box>
-
+        </Box> */}
         {/* Stats Cards */}
         <OrderStatsCards stats={calculateStats()} />
-
         {/* Tabs */}
         <Card bg={bgColor} border="1px" borderColor={borderColor}>
           <CardBody p={0}>
@@ -136,7 +135,6 @@ const OrderStatusPage = () => {
                   </Tab>
                 ))}
               </TabList>
-
               <TabPanels>
                 {statusConfig.map((status) => (
                   <TabPanel key={status.key} px={{ base: 4, md: 6 }} py={6}>
@@ -152,7 +150,7 @@ const OrderStatusPage = () => {
           </CardBody>
         </Card>
       </VStack>
-    </Box>
+    </Page>
   );
 };
 

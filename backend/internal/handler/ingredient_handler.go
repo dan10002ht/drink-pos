@@ -66,7 +66,9 @@ func (h *IngredientHandler) GetAllIngredients(c *gin.Context) {
 		response.InternalServerError(c, err.Error())
 		return
 	}
-
+	if ingredients == nil {
+		ingredients = make([]*model.Ingredient, 0)
+	}
 	response.Success(c, ingredients, "Ingredients fetched successfully")
 }
 

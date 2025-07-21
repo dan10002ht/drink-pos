@@ -55,3 +55,13 @@ export const getPaymentStatusLabel = (paymentStatus) => {
   };
   return labels[paymentStatus] || paymentStatus;
 };
+
+/**
+ * Valid status transitions for order status (FE/BE đồng bộ)
+ */
+export const validTransitions = {
+  pending: ["processing", "cancelled"],
+  processing: ["completed", "cancelled"],
+  completed: [],
+  cancelled: [],
+};

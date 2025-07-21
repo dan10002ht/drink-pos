@@ -9,7 +9,6 @@ import useSave from "../../../hooks/useSave";
 
 const CreateOrderContent = () => {
   const { formData, validateForm } = useOrderContext();
-
   // Fetch products with variants
   const {
     data: productsData,
