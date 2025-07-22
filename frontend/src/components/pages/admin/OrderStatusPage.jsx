@@ -120,16 +120,27 @@ const OrderStatusPage = () => {
         <Card bg={bgColor} border="1px" borderColor={borderColor}>
           <CardBody p={0}>
             <Tabs variant="enclosed" colorScheme="blue">
-              <TabList px={{ base: 4, md: 6 }} pt={6} overflowX="auto">
+              <TabList
+                px={{ base: 4, md: 6 }}
+                pt={6}
+                overflowX="auto"
+                overflowY="hidden"
+              >
                 {statusConfig.map((status) => (
-                  <Tab key={status.key} fontWeight="semibold" minW="auto">
+                  <Tab
+                    outline="none"
+                    borderRadius={0}
+                    key={status.key}
+                    fontWeight="semibold"
+                    minW="auto"
+                  >
                     <HStack spacing={2}>
                       <Text fontSize="lg">{status.icon}</Text>
                       <Text display={{ base: "none", sm: "block" }}>
                         {status.label}
                       </Text>
                       <Badge colorScheme={status.color} variant="subtle">
-                        {/* TODO: Get count from API */}0
+                        {statsData?.data?.status_counts?.[status.key] ?? 0}
                       </Badge>
                     </HStack>
                   </Tab>
