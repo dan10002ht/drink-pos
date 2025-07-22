@@ -1,20 +1,12 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- 007_create_orders_table.up.sql
 
--- Create order status enum
-CREATE TYPE order_status AS ENUM (
-    'pending',      -- Chờ xác nhận
-    'confirmed',    -- Đã xác nhận
-    'preparing',    -- Đang chuẩn bị
-    'ready',        -- Sẵn sàng
-    'completed',    -- Hoàn thành
-    'cancelled'     -- Đã hủy
-);
+-- (order_status enum moved to 001_create_order_status_enum.up.sql)
 
 -- Create discount type enum
 CREATE TYPE discount_type AS ENUM (
     'percentage',   -- Giảm theo phần trăm
     'fixed_amount'  -- Giảm theo số tiền cố định
-);
+); 
 
 -- Create orders table
 CREATE TABLE IF NOT EXISTS orders (
@@ -105,7 +97,10 @@ CREATE INDEX IF NOT EXISTS idx_discount_codes_code ON discount_codes(code);
 CREATE INDEX IF NOT EXISTS idx_discount_codes_is_active ON discount_codes(is_active);
 CREATE INDEX IF NOT EXISTS idx_discount_codes_valid_until ON discount_codes(valid_until);
 
--- Create function to generate order number
+-- Tạo sequence cho order_number
+CREATE SEQUENCE IF NOT EXISTS order_number_seq;
+
+-- Sửa function generate_order_number để dùng sequence
 CREATE OR REPLACE FUNCTION generate_order_number()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -113,18 +108,9 @@ DECLARE
     sequence_num INTEGER;
     new_order_number VARCHAR(20);
 BEGIN
-    -- Get today's date in YYYYMMDD format
     today_date := TO_CHAR(CURRENT_DATE, 'YYYYMMDD');
-    
-    -- Get the next sequence number for today
-    SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM 13) AS INTEGER)), 0) + 1
-    INTO sequence_num
-    FROM orders
-    WHERE order_number LIKE 'ORD-' || today_date || '-%';
-    
-    -- Generate order number
-    new_order_number := 'ORD-' || today_date || '-' || LPAD(sequence_num::TEXT, 3, '0');
-    
+    sequence_num := nextval('order_number_seq');
+    new_order_number := 'ORD-' || today_date || '-' || LPAD(sequence_num::TEXT, 6, '0');
     NEW.order_number := new_order_number;
     RETURN NEW;
 END;

@@ -10,6 +10,7 @@ import (
 	"food-pos-backend/internal/repository"
 	"food-pos-backend/internal/routes"
 	"food-pos-backend/internal/service"
+	"food-pos-backend/internal/ws"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -45,11 +46,15 @@ func main() {
 	orderRepo := repository.NewOrderRepository(db)
 	shipperRepo := repository.NewShipperRepository(db)
 
+	// Initialize WebSocket Hub (singleton)
+	hub := ws.NewHub()
+	go hub.Run()
+
 	// Initialize services
 	ingredientService := service.NewIngredientService(ingredientRepo, variantRepo)
 	productService := service.NewProductService(productRepo, ingredientRepo)
 	variantService := service.NewVariantService(variantRepo)
-	orderService := service.NewOrderService(orderRepo)
+	orderService := service.NewOrderService(orderRepo, hub)
 	shipperService := service.NewShipperService(shipperRepo)
 
 	// Initialize handlers
@@ -59,9 +64,10 @@ func main() {
 	ingredientHandler := handler.NewIngredientHandler(ingredientService)
 	orderHandler := handler.NewOrderHandler(orderService, orderRepo, jwtService)
 	shipperHandler := handler.NewShipperHandler(shipperService)
+	wsHandler := handler.NewWebSocketHandler(hub)
 
 	// Setup all routes
-	routes.SetupRoutes(r, jwtService, adminHandler, productHandler, variantHandler, ingredientHandler, orderHandler, shipperHandler)
+	routes.SetupRoutes(r, jwtService, adminHandler, productHandler, variantHandler, ingredientHandler, orderHandler, shipperHandler, wsHandler)
 
 	log.Printf("Server started at :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

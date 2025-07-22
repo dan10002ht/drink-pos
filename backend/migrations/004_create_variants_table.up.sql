@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- 004_create_variants_table.up.sql
 
 CREATE TABLE IF NOT EXISTS variants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

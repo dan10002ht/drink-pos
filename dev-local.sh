@@ -373,41 +373,55 @@ show_logs() {
 # Function to run database migrations
 run_migrations() {
     print_status "Running database migrations..."
-    
+
     # Check if PostgreSQL is running
     if ! docker-compose -f docker-compose.dev.yml exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
         print_error "PostgreSQL is not running. Please start the development environment first."
         return 1
     fi
-    
+
     # Copy migration files to container
     print_status "Copying migration files to PostgreSQL container..."
-    docker cp backend/migrations/001_create_users_table.up.sql food_pos_postgres_dev:/tmp/
-    docker cp backend/migrations/001_create_products_table.up.sql food_pos_postgres_dev:/tmp/
-    docker cp backend/migrations/002_create_variants_table.up.sql food_pos_postgres_dev:/tmp/
-    docker cp backend/migrations/003_create_ingredients_table.up.sql food_pos_postgres_dev:/tmp/
-    docker cp backend/migrations/004_create_variant_ingredients_table.up.sql food_pos_postgres_dev:/tmp/
-    docker cp backend/migrations/005_create_orders_table.up.sql food_pos_postgres_dev:/tmp/
-    
+    docker cp backend/migrations/001_create_order_status_enum.up.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/002_create_products_table.up.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/003_create_users_table.up.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/004_create_variants_table.up.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/005_create_ingredients_table.up.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/006_create_variant_ingredients_table.up.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/007_create_orders_table.up.sql food_pos_postgres_dev:/tmp/
+    # Nếu có shippers:
+    if [ -f backend/migrations/008_create_shippers.up.sql ]; then
+        docker cp backend/migrations/008_create_shippers.up.sql food_pos_postgres_dev:/tmp/
+    fi
+
     # Run migrations in order
-    print_status "Running migration: 001_create_users_table.up.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_users_table.up.sql
-    
-    print_status "Running migration: 001_create_products_table.up.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_products_table.up.sql
-    
-    print_status "Running migration: 002_create_variants_table.up.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/002_create_variants_table.up.sql
-    
-    print_status "Running migration: 003_create_ingredients_table.up.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/003_create_ingredients_table.up.sql
-    
-    print_status "Running migration: 004_create_variant_ingredients_table.up.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/004_create_variant_ingredients_table.up.sql
-    
-    print_status "Running migration: 005_create_orders_table.up.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/005_create_orders_table.up.sql
-    
+    print_status "Running migration: 001_create_order_status_enum.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_order_status_enum.up.sql
+
+    print_status "Running migration: 002_create_products_table.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/002_create_products_table.up.sql
+
+    print_status "Running migration: 003_create_users_table.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/003_create_users_table.up.sql
+
+    print_status "Running migration: 004_create_variants_table.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/004_create_variants_table.up.sql
+
+    print_status "Running migration: 005_create_ingredients_table.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/005_create_ingredients_table.up.sql
+
+    print_status "Running migration: 006_create_variant_ingredients_table.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/006_create_variant_ingredients_table.up.sql
+
+    print_status "Running migration: 007_create_orders_table.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/007_create_orders_table.up.sql
+
+    # Nếu có shippers:
+    if [ -f backend/migrations/008_create_shippers.up.sql ]; then
+        print_status "Running migration: 008_create_shippers.up.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/008_create_shippers.up.sql
+    fi
+
     print_success "Database migrations completed successfully!"
 }
 
@@ -443,27 +457,27 @@ rollback_migrations() {
 # Function to seed database
 seed_database() {
     print_status "Seeding database..."
-    
+
     # Check if PostgreSQL is running
     if ! docker-compose -f docker-compose.dev.yml exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
         print_error "PostgreSQL is not running. Please start the development environment first."
         return 1
     fi
-    
+
     # Check if migrations have been run
     local table_count=$(docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" | tr -d ' ')
-    
+
     if [ "$table_count" -eq "0" ]; then
         print_warning "No tables found. Running migrations first..."
         run_migrations
     fi
-    
+
     # Run seed script with correct connection string
     print_status "Running seed script..."
     cd backend
-    DB_URL="postgres://postgres:password@localhost:5433/food_pos?sslmode=disable" go run cmd/seed/main.go
+    DB_URL="postgres://postgres:password@localhost:5433/food_pos?sslmode=disable" go run cmd/seed_db/main.go
     cd ..
-    
+
     print_success "Database seeding completed successfully!"
 }
 

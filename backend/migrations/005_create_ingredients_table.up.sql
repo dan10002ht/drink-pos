@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- 005_create_ingredients_table.up.sql
 
 CREATE TABLE IF NOT EXISTS ingredients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -10,7 +10,10 @@ import (
 )
 
 // SetupRoutes configures all routes for the application
-func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handler.AdminHandler, productHandler *handler.ProductHandler, variantHandler *handler.VariantHandler, ingredientHandler *handler.IngredientHandler, orderHandler *handler.OrderHandler, shipperHandler *handler.ShipperHandler) {
+func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handler.AdminHandler, productHandler *handler.ProductHandler, variantHandler *handler.VariantHandler, ingredientHandler *handler.IngredientHandler, orderHandler *handler.OrderHandler, shipperHandler *handler.ShipperHandler, wsHandler *handler.WebSocketHandler) {
+	// Add WebSocket route (public, can add auth later)
+	r.GET("/ws", wsHandler.HandleWebSocket)
+
 	// API routes group
 	api := r.Group("/api")
 	{
@@ -45,7 +48,7 @@ func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handle
 				adminProtected.GET("/variants/:variant_public_id/ingredients", ingredientHandler.GetVariantIngredients)
 				adminProtected.POST("/variants/:variant_public_id/ingredients", ingredientHandler.AddIngredientToVariant)
 				adminProtected.DELETE("/variants/:variant_public_id/ingredients/:ingredient_public_id", ingredientHandler.RemoveIngredientFromVariant)
-				adminProtected.GET("/variants/:variant_public_id/cost", ingredientHandler.CalculateVariantCost)ại migration tạo trigger
+				adminProtected.GET("/variants/:variant_public_id/cost", ingredientHandler.CalculateVariantCost)
 
 				// Order routes
 				adminProtected.POST("/orders", orderHandler.CreateOrder)

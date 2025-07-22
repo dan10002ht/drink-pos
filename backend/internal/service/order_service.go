@@ -2,18 +2,22 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"food-pos-backend/internal/model"
 	"food-pos-backend/internal/repository"
+	"food-pos-backend/internal/ws"
 	"time"
 )
 
 type OrderService struct {
 	orderRepo *repository.OrderRepository
+	hub       *ws.Hub
 }
 
-func NewOrderService(orderRepo *repository.OrderRepository) *OrderService {
+func NewOrderService(orderRepo *repository.OrderRepository, hub *ws.Hub) *OrderService {
 	return &OrderService{
 		orderRepo: orderRepo,
+		hub:       hub,
 	}
 }
 
@@ -29,7 +33,16 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *model.CreateOrderRe
 	if err != nil {
 		return nil, err
 	}
-
+	// Emit event order_update
+	if s.hub != nil {
+		event := ws.Event{
+			Type: ws.EventOrderUpdate,
+			Payload: order,
+		}
+		if data, err := json.Marshal(event); err == nil {
+			s.hub.BroadcastToGroup("admin", data)
+		}
+	}
 	return order, nil
 }
 
@@ -55,7 +68,16 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, publicID string, r
 	if err != nil {
 		return nil, err
 	}
-
+	// Emit event order_update
+	if s.hub != nil {
+		event := ws.Event{
+			Type: ws.EventOrderUpdate,
+			Payload: order,
+		}
+		if data, err := json.Marshal(event); err == nil {
+			s.hub.BroadcastToGroup("admin", data)
+		}
+	}
 	return order, nil
 }
 
