@@ -13,12 +13,14 @@ import (
 type OrderService struct {
 	orderRepo *repository.OrderRepository
 	hub       *ws.Hub
+	userRepo  *repository.UserRepository
 }
 
-func NewOrderService(orderRepo *repository.OrderRepository, hub *ws.Hub) *OrderService {
+func NewOrderService(orderRepo *repository.OrderRepository, userRepo *repository.UserRepository, hub *ws.Hub) *OrderService {
 	return &OrderService{
 		orderRepo: orderRepo,
 		hub:       hub,
+		userRepo:  userRepo,
 	}
 }
 
@@ -28,6 +30,15 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *model.CreateOrderRe
 	if err := s.validateCreateOrderRequest(req); err != nil {
 		fmt.Println("Error validateCreateOrderRequest:", err)
 		return nil, err
+	}
+
+	// Nếu userID rỗng, tìm hoặc tạo user guest
+	if userID == "" {
+		user, err := s.userRepo.FindOrCreateUserByInfo(req.CustomerName, req.CustomerPhone, req.CustomerEmail)
+		if err != nil {
+			return nil, err
+		}
+		userID = user.ID
 	}
 
 	// Create order

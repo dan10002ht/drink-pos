@@ -76,4 +76,9 @@ func (j *JWTService) RefreshToken(tokenString string) (string, error) {
 
 	// Generate new token with extended expiration
 	return j.GenerateToken(claims.UserID, claims.Username, claims.Role)
-} 
+}
+
+// VerifyToken là alias cho ValidateToken để dùng cho handler
+func (j *JWTService) VerifyToken(tokenString string) (*Claims, error) {
+	return j.ValidateToken(tokenString)
+}

@@ -5,17 +5,20 @@ import (
 	"food-pos-backend/internal/jwt"
 	"food-pos-backend/internal/service"
 	"food-pos-backend/pkg/response"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AdminHandler struct {
 	adminService *service.AdminService
+	jwtService   *jwt.JWTService
 }
 
 func NewAdminHandler(jwtService *jwt.JWTService) *AdminHandler {
 	return &AdminHandler{
 		adminService: service.NewAdminService(jwtService),
+		jwtService:   jwtService,
 	}
 }
 
@@ -38,4 +41,19 @@ func (h *AdminHandler) Login(c *gin.Context) {
 		return
 	}
 	response.Success(c, gin.H{"token": token}, "Admin login successful")
-} 
+}
+
+func (h *AdminHandler) VerifyToken(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" || !strings.HasPrefix(token, "Bearer ") {
+		c.JSON(200, gin.H{"valid": false})
+		return
+	}
+	tokenStr := strings.TrimPrefix(token, "Bearer ")
+	claims, err := h.jwtService.VerifyToken(tokenStr)
+	if err != nil {
+		c.JSON(200, gin.H{"valid": false})
+		return
+	}
+	c.JSON(200, gin.H{"valid": true, "user": claims})
+}

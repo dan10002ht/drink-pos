@@ -37,15 +37,14 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// Get user ID from context
-	userID, exists := c.Get("user_id")
-	if !exists {
-		response.Error(c, http.StatusUnauthorized, "User not authenticated")
-		return
+	userID := ""
+	if v, exists := c.Get("user_id"); exists {
+		if s, ok := v.(string); ok {
+			userID = s
+		}
 	}
 
-	// Create order
-	order, err := h.orderService.CreateOrder(c.Request.Context(), &req, userID.(string))
+	order, err := h.orderService.CreateOrder(c.Request.Context(), &req, userID)
 	if err != nil {
 		// Log the actual error for debugging
 		c.Error(err)

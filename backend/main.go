@@ -45,6 +45,7 @@ func main() {
 	productRepo := repository.NewProductRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	shipperRepo := repository.NewShipperRepository(db)
+	userRepo := repository.NewUserRepository()
 
 	// Initialize WebSocket Hub (singleton)
 	hub := ws.NewHub()
@@ -54,7 +55,7 @@ func main() {
 	ingredientService := service.NewIngredientService(ingredientRepo, variantRepo)
 	productService := service.NewProductService(productRepo, ingredientRepo)
 	variantService := service.NewVariantService(variantRepo)
-	orderService := service.NewOrderService(orderRepo, hub)
+	orderService := service.NewOrderService(orderRepo, userRepo, hub)
 	shipperService := service.NewShipperService(shipperRepo)
 
 	// Initialize handlers

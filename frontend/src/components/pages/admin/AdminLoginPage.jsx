@@ -9,9 +9,7 @@ import {
   useToast,
   FormErrorMessage,
   Text,
-  Container,
   Flex,
-  Icon,
   InputGroup,
   InputRightElement,
   IconButton,
@@ -22,6 +20,8 @@ import { useCreateApi } from "../../../hooks/useCreateApi";
 import { useInput } from "../../../hooks/useInput";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { setToken } from "../../../utils/auth";
+import { useDispatch } from 'react-redux';
+import { setAuth } from '../../../store/authSlice';
 
 export default function AdminLoginPage() {
   const { value, handleChangeInput } = useInput({
@@ -33,6 +33,7 @@ export default function AdminLoginPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
 
   // Lấy return URL từ state hoặc default về dashboard
   const from = location.state?.from?.pathname || "/admin/dashboard";
@@ -56,7 +57,10 @@ export default function AdminLoginPage() {
         position: "top",
       });
       // Lưu token và redirect
-      setToken(data.data?.token || data.token);
+      const token = data.data?.token || data.token;
+      setToken(token);
+      // Lưu vào Redux Toolkit
+      dispatch(setAuth({ user: data.data?.user || {}, token }));
       navigate(from, { replace: true });
     },
     onError: (error) => {

@@ -17,6 +17,9 @@ func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handle
 	// API routes group
 	api := r.Group("/api")
 	{
+		// Route verify token (public)
+		api.POST("/auth/verify-token", adminHandler.VerifyToken)
+
 		// Admin routes
 		admin := api.Group("/admin")
 		{
@@ -86,4 +89,4 @@ func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handle
 			"message": "3 O'CLOCK API is running",
 		}, "API is running")
 	})
-} 
+}
