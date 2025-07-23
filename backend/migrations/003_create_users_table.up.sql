@@ -1,7 +1,7 @@
 -- 003_create_users_table.up.sql
 
 -- Tạo enum cho role
-CREATE TYPE user_role AS ENUM ('admin', 'client', 'guest');
+CREATE TYPE user_role AS ENUM ('super_admin', 'admin', 'client', 'guest');
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

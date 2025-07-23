@@ -46,14 +46,14 @@ func (h *AdminHandler) Login(c *gin.Context) {
 func (h *AdminHandler) VerifyToken(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" || !strings.HasPrefix(token, "Bearer ") {
-		c.JSON(200, gin.H{"valid": false})
+		response.Success(c, gin.H{"valid": false}, "Token is required")
 		return
 	}
 	tokenStr := strings.TrimPrefix(token, "Bearer ")
 	claims, err := h.jwtService.VerifyToken(tokenStr)
 	if err != nil {
-		c.JSON(200, gin.H{"valid": false})
+		response.Success(c, gin.H{"valid": false}, "Invalid token")
 		return
 	}
-	c.JSON(200, gin.H{"valid": true, "user": claims})
+	response.Success(c, gin.H{"valid": true, "user": claims}, "Token is valid")
 }

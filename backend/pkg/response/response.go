@@ -9,11 +9,11 @@ import (
 type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Data    any `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
 }
 
-func Success(c *gin.Context, data interface{}, message string) {
+func Success(c *gin.Context, data any, message string) {
 	c.JSON(http.StatusOK, Response{
 		Success: true,
 		Message: message,
@@ -21,7 +21,7 @@ func Success(c *gin.Context, data interface{}, message string) {
 	})
 }
 
-func SuccessWithStatus(c *gin.Context, statusCode int, message string, data interface{}) {
+func SuccessWithStatus(c *gin.Context, statusCode int, message string, data any) {
 	c.JSON(statusCode, Response{
 		Success: true,
 		Message: message,

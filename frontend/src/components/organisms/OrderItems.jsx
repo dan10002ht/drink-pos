@@ -144,9 +144,19 @@ const OrderItems = ({ products = [] }) => {
                 {/* Item preview */}
                 {item.variant_id && (
                   <Box mt={3} p={3} bg="gray.50" borderRadius="md">
-                    <HStack justify="space-between">
-                      <VStack align="start" spacing={1}>
-                        <Text fontSize="sm" fontWeight="medium">
+                    <HStack
+                      justify="space-between"
+                      align="start"
+                      w="100%"
+                      minW={0}
+                    >
+                      <VStack align="start" spacing={1} flex="1" minW={0}>
+                        <Text
+                          fontSize="sm"
+                          w="100%"
+                          fontWeight="medium"
+                          isTruncated
+                        >
                           {item.id
                             ? `${item.product_name || ""} - ${
                                 item.variant_name || ""
@@ -159,7 +169,7 @@ const OrderItems = ({ products = [] }) => {
                                   ?.variant_name || ""
                               }`}
                         </Text>
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="gray.600" isTruncated>
                           {formatCurrency(
                             item.id
                               ? item.unit_price || 0
@@ -169,7 +179,13 @@ const OrderItems = ({ products = [] }) => {
                           x {item.quantity}
                         </Text>
                       </VStack>
-                      <Text fontSize="sm" fontWeight="medium">
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        minW="70px"
+                        textAlign="right"
+                        whiteSpace="nowrap"
+                      >
                         {formatCurrency(
                           (item.id
                             ? item.unit_price || 0

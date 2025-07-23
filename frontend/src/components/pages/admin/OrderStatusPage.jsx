@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-
   Text,
   VStack,
   HStack,
@@ -90,7 +89,6 @@ const OrderStatusPage = () => {
     return () => ws.close();
   }, []);
 
-
   // Khi user chuyển tab
   const handleTabChange = (tabKey) => {
     setActiveTab(tabKey);
@@ -124,6 +122,10 @@ const OrderStatusPage = () => {
                     fontWeight="semibold"
                     minW="auto"
                     position="relative"
+                    _selected={{
+                      bg: "blue.100",
+                      color: "white",
+                    }}
                   >
                     <HStack spacing={2}>
                       <Text fontSize="lg">{status.icon}</Text>

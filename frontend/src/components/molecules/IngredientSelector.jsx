@@ -20,6 +20,7 @@ import {
   Th,
   Td,
   Checkbox,
+  Flex,
 } from "@chakra-ui/react";
 import { FiPlus, FiX } from "react-icons/fi";
 import { useFetchApi } from "../../hooks/useFetchApi";
@@ -160,7 +161,11 @@ const IngredientSelector = ({
           <Text fontWeight="semibold" mb={3}>
             Thêm nguyên liệu
           </Text>
-          <HStack spacing={3} align="end">
+          <Flex
+            flexDirection={{ base: "column", md: "row" }}
+            gap={3}
+            align="end"
+          >
             <FormControl flex={2}>
               <FormLabel fontSize="sm">Chọn nguyên liệu</FormLabel>
               <Select
@@ -212,7 +217,7 @@ const IngredientSelector = ({
             >
               Thêm
             </Button>
-          </HStack>
+          </Flex>
         </Box>
 
         {/* Selected Ingredients Table */}

@@ -22,7 +22,7 @@ const DashboardLayout = () => {
   };
 
   return (
-    <Box minH="100vh" bg={useColorModeValue("gray.50", "gray.900")}>
+    <Box minH="100vh" display="flex" flexDirection="column">
       {/* Header */}
       <Box
         bg={bgColor}
@@ -51,17 +51,23 @@ const DashboardLayout = () => {
         </Flex>
       </Box>
 
-      <Flex>
-        {/* Desktop Sidebar */}
+      <Box display="flex" flex="1" minH="0">
+        {/* Sidebar */}
         <Sidebar />
-
-        {/* Main Content */}
-        <Box flex="1" p={6} pb={{ base: "80px", md: "6" }} w="100%">
+        {/* Main content scrollable */}
+        <Box
+          flex="1"
+          p={6}
+          overflowY="auto"
+          pb={{ base: "80px", md: "6" }}
+          w="100%"
+          minH="0"
+          maxH={{ base: "calc(100vh - 80px)", md: "100vh" }}
+        >
           <Outlet />
         </Box>
-      </Flex>
+      </Box>
 
-      {/* Mobile Bottom Navigation */}
       <BottomNavigation />
     </Box>
   );

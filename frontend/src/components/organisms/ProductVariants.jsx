@@ -65,7 +65,7 @@ const ProductVariants = () => {
               </Flex>
 
               <VStack spacing={4} align="stretch">
-                <HStack spacing={4}>
+                <Flex flexDirection={{ base: "column", md: "row" }} gap={4}>
                   <FormControl
                     isInvalid={
                       errors.variants &&
@@ -115,7 +115,7 @@ const ProductVariants = () => {
                         errors.variants[index].price}
                     </FormErrorMessage>
                   </FormControl>
-                </HStack>
+                </Flex>
 
                 <FormControl
                   isInvalid={

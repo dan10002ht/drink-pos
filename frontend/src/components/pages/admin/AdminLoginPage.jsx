@@ -20,8 +20,8 @@ import { useCreateApi } from "../../../hooks/useCreateApi";
 import { useInput } from "../../../hooks/useInput";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { setToken } from "../../../utils/auth";
-import { useDispatch } from 'react-redux';
-import { setAuth } from '../../../store/authSlice';
+import { useDispatch } from "react-redux";
+import { setAuth } from "../../../store/authSlice";
 
 export default function AdminLoginPage() {
   const { value, handleChangeInput } = useInput({
@@ -59,7 +59,6 @@ export default function AdminLoginPage() {
       // Lưu token và redirect
       const token = data.data?.token || data.token;
       setToken(token);
-      // Lưu vào Redux Toolkit
       dispatch(setAuth({ user: data.data?.user || {}, token }));
       navigate(from, { replace: true });
     },
