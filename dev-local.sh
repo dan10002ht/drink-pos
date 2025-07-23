@@ -166,7 +166,7 @@ update_fe_env_api_url() {
     local be_url=$(wait_for_tunnel_url tunnel-be.log 30)
     if [ ! -z "$be_url" ]; then
         if [ -f "frontend/.env" ]; then
-            sed -i '/^VITE_API_URL=/d' frontend/.env
+            perl -i -ne 'print unless /^VITE_API_URL=/' frontend/.env
         fi
         echo "VITE_API_URL=${be_url}/api" >> frontend/.env
         print_success "Updated frontend/.env with VITE_API_URL=${be_url}/api"
@@ -179,9 +179,9 @@ update_fe_env_api_url() {
 update_fe_env_tunnel_domain() {
     local fe_url=$(wait_for_tunnel_url tunnel-fe.log 30)
     if [ ! -z "$fe_url" ]; then
-        local domain=$(echo "$fe_url" | sed -E 's#https://([^/]+).*#\1#')
+        local domain=$(echo "$fe_url" | perl -pe 's#https://([^/]+).*#$1#')
         if [ -f "frontend/.env" ]; then
-            sed -i '/^VITE_TUNNEL_DOMAIN=/d' frontend/.env
+            perl -i -ne 'print unless /^VITE_TUNNEL_DOMAIN=/' frontend/.env
         fi
         echo "VITE_TUNNEL_DOMAIN=$domain" >> frontend/.env
         print_success "Updated frontend/.env with VITE_TUNNEL_DOMAIN=$domain"
@@ -193,8 +193,8 @@ update_fe_env_tunnel_domain() {
 # Function to update .env for local mode
 update_fe_env_local() {
     if [ -f "frontend/.env" ]; then
-        sed -i '/^VITE_API_URL=/d' frontend/.env
-        sed -i '/^VITE_TUNNEL_DOMAIN=/d' frontend/.env
+        perl -i -ne 'print unless /^VITE_API_URL=/' frontend/.env
+        perl -i -ne 'print unless /^VITE_TUNNEL_DOMAIN=/' frontend/.env
     fi
     echo "VITE_API_URL=http://localhost:8080/api" >> frontend/.env
     echo "VITE_TUNNEL_DOMAIN=localhost" >> frontend/.env

@@ -19,7 +19,6 @@ import {
   getStatusColor,
 } from "../../utils/orderHelpers";
 import { useEditApi } from "../../hooks/useEditApi";
-import { Spinner } from "@chakra-ui/react";
 
 const OrderCard = ({ order, status, refetch }) => {
   const navigate = useNavigate();
@@ -68,17 +67,11 @@ const OrderCard = ({ order, status, refetch }) => {
             >
               #{order.order_number}
             </Text>
+          </HStack>
             <Badge colorScheme={getStatusColor(status)}>
               {getStatusLabel(status)}
             </Badge>
-          </HStack>
-          <Text
-            fontWeight="bold"
-            fontSize={{ base: "md", md: "lg" }}
-            color="green.600"
-          >
-            {formatCurrency(order.total_amount)}
-          </Text>
+            
         </Flex>
 
         {/* Customer Info */}
@@ -98,12 +91,19 @@ const OrderCard = ({ order, status, refetch }) => {
 
         {/* Meta Info */}
         <HStack spacing={4} flexWrap="wrap">
+            <Text
+              fontWeight="bold"
+              fontSize={{ base: "md", md: "lg" }}
+              color="green.600"
+            >
+              {formatCurrency(order.total_amount)}
+            </Text>
           <Text fontSize="xs" color="gray.500">
             🕒 {formatTimeAgo(order.created_at)}
           </Text>
-          {order.items && (
+          {order.items_count && (
             <Text fontSize="xs" color="gray.500">
-              📦 {order.items.length} sản phẩm
+              📦 {order.items_count} sản phẩm
             </Text>
           )}
         </HStack>

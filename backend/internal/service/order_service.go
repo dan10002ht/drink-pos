@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"food-pos-backend/internal/model"
 	"food-pos-backend/internal/repository"
 	"food-pos-backend/internal/ws"
@@ -25,18 +26,20 @@ func NewOrderService(orderRepo *repository.OrderRepository, hub *ws.Hub) *OrderS
 func (s *OrderService) CreateOrder(ctx context.Context, req *model.CreateOrderRequest, userID string) (*model.Order, error) {
 	// Validate request
 	if err := s.validateCreateOrderRequest(req); err != nil {
+		fmt.Println("Error validateCreateOrderRequest:", err)
 		return nil, err
 	}
 
 	// Create order
 	order, err := s.orderRepo.CreateOrder(ctx, req, userID)
 	if err != nil {
+		fmt.Println("Error CreateOrder:", err)
 		return nil, err
 	}
 	// Emit event order_update
 	if s.hub != nil {
 		event := ws.Event{
-			Type: ws.EventOrderUpdate,
+			Type:    ws.EventOrderUpdate,
 			Payload: order,
 		}
 		if data, err := json.Marshal(event); err == nil {
@@ -71,7 +74,7 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, publicID string, r
 	// Emit event order_update
 	if s.hub != nil {
 		event := ws.Event{
-			Type: ws.EventOrderUpdate,
+			Type:    ws.EventOrderUpdate,
 			Payload: order,
 		}
 		if data, err := json.Marshal(event); err == nil {
@@ -191,4 +194,4 @@ func (s *OrderService) validateStatusTransition(ctx context.Context, orderID str
 	}
 
 	return nil
-} 
+}

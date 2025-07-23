@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"food-pos-backend/internal/model"
 	"food-pos-backend/internal/service"
 	"food-pos-backend/pkg/response"
@@ -34,6 +35,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 			response.Error(c, http.StatusBadRequest, validationErr.Message)
 			return
 		}
+		fmt.Println("Error CreateProduct:", err)
 		response.Error(c, http.StatusInternalServerError, "Failed to create product")
 		return
 	}
@@ -99,9 +101,9 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 
 	// Validate sort by field
 	validSortFields := map[string]bool{
-		"name":        true,
-		"created_at":  true,
-		"updated_at":  true,
+		"name":       true,
+		"created_at": true,
+		"updated_at": true,
 	}
 	if !validSortFields[sortBy] {
 		sortBy = "created_at"
@@ -140,4 +142,4 @@ func (h *ProductHandler) GetProductByID(c *gin.Context) {
 	}
 
 	response.SuccessWithStatus(c, http.StatusOK, "Product fetched successfully", product)
-} 
+}

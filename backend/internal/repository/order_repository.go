@@ -37,22 +37,22 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 	orderQuery := `
 		INSERT INTO orders (
 			customer_name, customer_phone, customer_email, 
-			discount_code, discount_note, payment_method, notes, created_by, updated_by
+			discount_code, discount_note, payment_method, notes, created_by, updated_by, items_count
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, public_id, order_number, customer_name, customer_phone, customer_email,
 			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
-			created_at, updated_at
+			created_at, updated_at, items_count
 	`
 	err = tx.QueryRowContext(ctx, orderQuery,
 		req.CustomerName, req.CustomerPhone, req.CustomerEmail,
-		req.DiscountCode, req.DiscountNote, req.PaymentMethod, req.Notes, userID, userID,
+		req.DiscountCode, req.DiscountNote, req.PaymentMethod, req.Notes, userID, userID, len(req.Items),
 	).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
-		&order.CreatedAt, &order.UpdatedAt,
+		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount,
 	)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 	// Create order items
 	items := make([]model.OrderItem, 0, len(req.Items))
 	subtotal := 0.0
-	
+
 	for _, itemReq := range req.Items {
 		// Get variant info
 		var variantID, variantName, productName string
@@ -94,7 +94,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 		`
 		totalPrice := variantPrice * float64(itemReq.Quantity)
 		subtotal += totalPrice
-		
+
 		err = tx.QueryRowContext(ctx, itemQuery,
 			order.ID, variantID, productName, variantName,
 			itemReq.Quantity, variantPrice, totalPrice, itemReq.Notes,
@@ -112,19 +112,19 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 	// Update order with calculated subtotal and total_amount
 	updateOrderQuery := `
 		UPDATE orders 
-		SET subtotal = $1, total_amount = $2, updated_at = CURRENT_TIMESTAMP, updated_by = $3
-		WHERE id = $4
+		SET subtotal = $1, total_amount = $2, updated_at = CURRENT_TIMESTAMP, updated_by = $3, items_count = $4
+		WHERE id = $5
 		RETURNING id, public_id, order_number, customer_name, customer_phone, customer_email,
 			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
-			created_at, updated_at
+			created_at, updated_at, items_count
 	`
 	totalAmount := subtotal
-	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userID, order.ID).Scan(
+	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userID, len(req.Items), order.ID).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
-		&order.CreatedAt, &order.UpdatedAt,
+		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount,
 	)
 	if err != nil {
 		return nil, err
@@ -284,7 +284,7 @@ func (r *OrderRepository) ListOrders(ctx context.Context, req *model.ListOrdersR
 	}
 
 	if req.Search != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf("(order_number ILIKE $%d OR customer_name ILIKE $%d OR customer_phone ILIKE $%d)", 
+		whereConditions = append(whereConditions, fmt.Sprintf("(order_number ILIKE $%d OR customer_name ILIKE $%d OR customer_phone ILIKE $%d)",
 			argIndex, argIndex, argIndex))
 		args = append(args, "%"+req.Search+"%")
 		argIndex++
@@ -342,7 +342,7 @@ func (r *OrderRepository) ListOrders(ctx context.Context, req *model.ListOrdersR
 		SELECT id, public_id, order_number, customer_name, customer_phone, customer_email,
 			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
-			created_at, updated_at
+			created_at, updated_at, items_count
 		FROM orders
 		WHERE %s
 		ORDER BY %s %s
@@ -356,14 +356,14 @@ func (r *OrderRepository) ListOrders(ctx context.Context, req *model.ListOrdersR
 	}
 	defer rows.Close()
 
-	var orders []*model.Order
+	orders := make([]*model.Order, 0)
 	for rows.Next() {
 		var order model.Order
 		err := rows.Scan(
 			&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 			&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
 			&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
-			&order.CreatedAt, &order.UpdatedAt,
+			&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount,
 		)
 		if err != nil {
 			return nil, err
@@ -601,7 +601,7 @@ func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req 
 		}
 	}
 
-	// 5. Xoá các item cũ không còn trong danh sách mới
+	// 5. Xóa các item không còn nữa
 	for oldID := range oldItemIDs {
 		if !newItemIDs[oldID] {
 			_, err := tx.ExecContext(ctx, "DELETE FROM order_items WHERE id = $1", oldID)
@@ -609,6 +609,12 @@ func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req 
 				return nil, err
 			}
 		}
+	}
+
+	// 6. Cập nhật lại items_count
+	_, err = tx.ExecContext(ctx, "UPDATE orders SET items_count = (SELECT COUNT(*) FROM order_items WHERE order_id = $1) WHERE id = $1", orderID)
+	if err != nil {
+		return nil, err
 	}
 
 	// 6. Commit transaction
@@ -651,7 +657,7 @@ func (r *OrderRepository) GetOrderStatistics(ctx context.Context, startDate, end
 		FROM orders
 		%s
 	`, dateFilter)
-	
+
 	err := r.db.QueryRowContext(ctx, statsQuery, args...).Scan(&totalOrders, &totalRevenue)
 	if err != nil {
 		return nil, err
@@ -672,7 +678,7 @@ func (r *OrderRepository) GetOrderStatistics(ctx context.Context, startDate, end
 		%s
 		GROUP BY status
 	`, dateFilter)
-	
+
 	statusRows, err := r.db.QueryContext(ctx, statusQuery, args...)
 	if err != nil {
 		return nil, err
@@ -701,7 +707,7 @@ func (r *OrderRepository) GetOrderStatistics(ctx context.Context, startDate, end
 		ORDER BY created_at DESC
 		LIMIT 10
 	`, dateFilter)
-	
+
 	recentRows, err := r.db.QueryContext(ctx, recentQuery, args...)
 	if err != nil {
 		return nil, err
@@ -724,12 +730,12 @@ func (r *OrderRepository) GetOrderStatistics(ctx context.Context, startDate, end
 	}
 
 	stats := &model.OrderStatistics{
-		TotalOrders:      totalOrders,
-		TotalRevenue:     totalRevenue,
+		TotalOrders:       totalOrders,
+		TotalRevenue:      totalRevenue,
 		AverageOrderValue: averageOrderValue,
-		StatusCounts:     statusCounts,
-		RecentOrders:     recentOrders,
+		StatusCounts:      statusCounts,
+		RecentOrders:      recentOrders,
 	}
 
 	return stats, nil
-} 
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Box,
   Text,
@@ -14,12 +14,11 @@ import {
 import { useFetchApi } from "../../hooks/useFetchApi";
 import OrderCard from "../molecules/OrderCard";
 import { useQueryClient } from "@tanstack/react-query";
-import ScrollToTopButton from "../atoms/ScrollToTopButton";
 
 const OrderList = ({ status, page, onLoadMore, prependOrder, refetchList }) => {
   const queryClient = useQueryClient();
   const listRef = useRef();
-  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const firstItemRef = useRef();
   // Fetch orders for the specific status
   const {
     data: ordersData,
@@ -41,32 +40,45 @@ const OrderList = ({ status, page, onLoadMore, prependOrder, refetchList }) => {
   const orders = ordersData?.orders || [];
   const total = ordersData?.total || 0;
 
-  // Prepend order nếu có (realtime, page 1)
+  // Prepend hoặc update order nếu có (realtime, loadmore)
   useEffect(() => {
-    if (prependOrder && page === 1) {
-      // Kiểm tra trùng id tránh thêm lặp
-      if (!orders.find((o) => o.id === prependOrder.id)) {
-        queryClient.setQueryData(
-          [
-            "/admin/orders",
-            {
-              status,
-              page: 1,
-              limit: 20,
-              sort_by: "created_at",
-              sort_order: "desc",
-            },
-          ],
-          (old) => {
-            if (!old?.orders) return old;
-            return {
-              ...old,
-              orders: [prependOrder, ...old.orders],
-              total: (old.total || 0) + 1,
-            };
+    if (prependOrder) {
+      queryClient.setQueryData(
+        [
+          "/admin/orders",
+          {
+            status,
+            page: page || 1,
+            limit: 20,
+            sort_by: "created_at",
+            sort_order: "desc",
+          },
+        ],
+        (old) => {
+          const oldData = old?.data;
+          if (!oldData?.orders) return old;
+          const idx = oldData.orders.findIndex((o) => o.id === prependOrder.id);
+          let newOrders;
+          let newTotal = oldData.total;
+          if (idx === -1) {
+            // Chưa có, prepend vào đầu
+            newOrders = [prependOrder, ...oldData.orders];
+            newTotal = (oldData.total || 0) + 1;
+          } else {
+            // Đã có, update order đó
+            newOrders = [...oldData.orders];
+            newOrders[idx] = prependOrder;
           }
-        );
-      }
+          return {
+            ...old,
+            data: {
+              ...oldData,
+              orders: newOrders,
+              total: newTotal,
+            },
+          };
+        }
+      );
     }
     // eslint-disable-next-line
   }, [prependOrder, page]);
@@ -78,35 +90,6 @@ const OrderList = ({ status, page, onLoadMore, prependOrder, refetchList }) => {
     }
     // eslint-disable-next-line
   }, [refetchList]);
-
-  // Theo dõi scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (listRef.current) {
-        setShowScrollToTop(listRef.current.scrollTop > 100);
-      }
-    };
-    const node = listRef.current;
-    if (node) node.addEventListener("scroll", handleScroll);
-    return () => node && node.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Khi có prependOrder, nếu scroll không ở top, show button
-  useEffect(() => {
-    if (prependOrder && page === 1 && listRef.current) {
-      if (listRef.current.scrollTop > 100) {
-        setShowScrollToTop(true);
-      }
-    }
-  }, [prependOrder, page]);
-
-  // Scroll về top khi bấm nút
-  const handleScrollToTop = () => {
-    if (listRef.current) {
-      listRef.current.scrollTo({ top: 0, behavior: "smooth" });
-      setShowScrollToTop(false);
-    }
-  };
 
   // Loading state
   if (isLoading && orders.length === 0) {
@@ -174,8 +157,13 @@ const OrderList = ({ status, page, onLoadMore, prependOrder, refetchList }) => {
         </Flex>
 
         {/* Orders list */}
-        {orders.map((order) => (
-          <OrderCard key={order.id} order={order} status={status} />
+        {orders.map((order, idx) => (
+          <OrderCard
+            key={order.id}
+            order={order}
+            status={status}
+            ref={idx === 0 ? firstItemRef : undefined}
+          />
         ))}
 
         {/* Load More Button */}
@@ -192,7 +180,6 @@ const OrderList = ({ status, page, onLoadMore, prependOrder, refetchList }) => {
           </Button>
         )}
       </VStack>
-      <ScrollToTopButton onClick={handleScrollToTop} show={showScrollToTop} />
     </Box>
   );
 };

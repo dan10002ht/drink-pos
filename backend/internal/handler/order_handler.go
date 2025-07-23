@@ -49,7 +49,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	if err != nil {
 		// Log the actual error for debugging
 		c.Error(err)
-		
+
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
 			return
@@ -77,26 +77,27 @@ type OrderItemResponse struct {
 }
 
 type OrderResponse struct {
-	ID            string  `json:"id"`
-	OrderNumber   string  `json:"order_number"`
-	CustomerName  string  `json:"customer_name"`
-	CustomerPhone string  `json:"customer_phone"`
-	CustomerEmail string  `json:"customer_email"`
-	Status        string  `json:"status"`
-	Subtotal      float64 `json:"subtotal"`
-	DiscountAmount float64 `json:"discount_amount"`
-	DiscountType  *string `json:"discount_type"`
-	DiscountCode  string  `json:"discount_code"`
-	DiscountNote  *string `json:"discount_note"`
-	TotalAmount   float64 `json:"total_amount"`
-	PaymentMethod string  `json:"payment_method"`
-	PaymentStatus string  `json:"payment_status"`
-	Notes         *string `json:"notes"`
-	CreatedBy     string  `json:"created_by"`
-	UpdatedBy     string  `json:"updated_by"`
-	CreatedAt     string  `json:"created_at"`
-	UpdatedAt     string  `json:"updated_at"`
-	Items         []OrderItemResponse `json:"items"`
+	ID             string              `json:"id"`
+	OrderNumber    string              `json:"order_number"`
+	CustomerName   string              `json:"customer_name"`
+	CustomerPhone  string              `json:"customer_phone"`
+	CustomerEmail  string              `json:"customer_email"`
+	Status         string              `json:"status"`
+	Subtotal       float64             `json:"subtotal"`
+	DiscountAmount float64             `json:"discount_amount"`
+	DiscountType   *string             `json:"discount_type"`
+	DiscountCode   string              `json:"discount_code"`
+	DiscountNote   *string             `json:"discount_note"`
+	TotalAmount    float64             `json:"total_amount"`
+	PaymentMethod  string              `json:"payment_method"`
+	PaymentStatus  string              `json:"payment_status"`
+	Notes          *string             `json:"notes"`
+	CreatedBy      string              `json:"created_by"`
+	UpdatedBy      string              `json:"updated_by"`
+	CreatedAt      string              `json:"created_at"`
+	UpdatedAt      string              `json:"updated_at"`
+	Items          []OrderItemResponse `json:"items"`
+	ItemsCount     int                 `json:"items_count"`
 	// ... có thể bổ sung các trường khác nếu cần ...
 }
 
@@ -137,26 +138,27 @@ func toOrderResponse(order *model.Order) *OrderResponse {
 		items = append(items, toOrderItemResponse(item))
 	}
 	return &OrderResponse{
-		ID:            order.PublicID,
-		OrderNumber:   order.OrderNumber,
-		CustomerName:  order.CustomerName,
-		CustomerPhone: order.CustomerPhone,
-		CustomerEmail: order.CustomerEmail,
-		Status:        string(order.Status),
-		Subtotal:      order.Subtotal,
+		ID:             order.PublicID,
+		OrderNumber:    order.OrderNumber,
+		CustomerName:   order.CustomerName,
+		CustomerPhone:  order.CustomerPhone,
+		CustomerEmail:  order.CustomerEmail,
+		Status:         string(order.Status),
+		Subtotal:       order.Subtotal,
 		DiscountAmount: order.DiscountAmount,
-		DiscountType:  discountTypePtr,
-		DiscountCode:  order.DiscountCode,
-		DiscountNote:  discountNotePtr,
-		TotalAmount:   order.TotalAmount,
-		PaymentMethod: order.PaymentMethod,
-		PaymentStatus: string(order.PaymentStatus),
-		Notes:         notesPtr,
-		CreatedBy:     order.CreatedBy,
-		UpdatedBy:     order.UpdatedBy,
-		CreatedAt:     order.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:     order.UpdatedAt.Format(time.RFC3339),
-		Items:         items,
+		DiscountType:   discountTypePtr,
+		DiscountCode:   order.DiscountCode,
+		DiscountNote:   discountNotePtr,
+		TotalAmount:    order.TotalAmount,
+		PaymentMethod:  order.PaymentMethod,
+		PaymentStatus:  string(order.PaymentStatus),
+		Notes:          notesPtr,
+		CreatedBy:      order.CreatedBy,
+		UpdatedBy:      order.UpdatedBy,
+		CreatedAt:      order.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:      order.UpdatedAt.Format(time.RFC3339),
+		Items:          items,
+		ItemsCount:     order.ItemsCount,
 	}
 }
 
@@ -347,8 +349,6 @@ func (h *OrderHandler) GetPaymentMethods(c *gin.Context) {
 	response.Success(c, methods, "Payment methods retrieved successfully")
 }
 
-
-
 // GetOrderStatistics returns order statistics
 func (h *OrderHandler) GetOrderStatistics(c *gin.Context) {
 	// Parse date range if provided
@@ -372,4 +372,4 @@ func (h *OrderHandler) GetOrderStatistics(c *gin.Context) {
 	}
 
 	response.Success(c, stats, "Order statistics retrieved successfully")
-} 
+}

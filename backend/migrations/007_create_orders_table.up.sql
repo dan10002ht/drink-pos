@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS orders (
     notes TEXT, -- Ghi chú đơn hàng
     created_by UUID REFERENCES users(id),
     updated_by UUID REFERENCES users(id),
+    items_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -171,3 +172,22 @@ CREATE TRIGGER trigger_log_order_status_change
     AFTER UPDATE ON orders
     FOR EACH ROW
     EXECUTE FUNCTION log_order_status_change(); 
+
+-- Create function to update items_count
+CREATE OR REPLACE FUNCTION update_order_items_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE orders
+    SET items_count = (
+        SELECT COUNT(*) FROM order_items WHERE order_id = COALESCE(NEW.order_id, OLD.order_id)
+    )
+    WHERE id = COALESCE(NEW.order_id, OLD.order_id);
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to update items_count
+CREATE TRIGGER trigger_update_order_items_count
+    AFTER INSERT OR UPDATE OR DELETE ON order_items
+    FOR EACH ROW
+    EXECUTE FUNCTION update_order_items_count(); 

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS variant_ingredients (
     variant_id UUID NOT NULL REFERENCES variants(id) ON DELETE CASCADE,
     ingredient_id UUID NOT NULL REFERENCES ingredients(id),
     quantity DECIMAL(10,2) NOT NULL,
+    UNIQUE (variant_id, ingredient_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

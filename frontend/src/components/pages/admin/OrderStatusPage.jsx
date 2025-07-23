@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Heading,
+
   Text,
   VStack,
   HStack,
@@ -16,14 +15,10 @@ import {
   TabPanel,
 } from "@chakra-ui/react";
 import { useFetchApi } from "../../../hooks/useFetchApi";
-import OrderStatsCards from "../../molecules/OrderStatsCards";
 import OrderList from "../../organisms/OrderList";
 import Page from "../../common/Page";
-import NewOrderBadge from "../../atoms/NewOrderBadge";
-import NewOrderBanner from "../../molecules/NewOrderBanner";
 import { useRef } from "react";
 import { statusConfig } from "../../../config/orderStatusConfig";
-import { calculateStats } from "../../../utils/orderStatusUtils";
 
 const OrderStatusPage = () => {
   const bgColor = useColorModeValue("white", "gray.800");
@@ -36,23 +31,11 @@ const OrderStatusPage = () => {
     completed: 1,
   });
 
-  const [newOrderTabs, setNewOrderTabs] = useState({
-    pending: 0,
-    processing: 0,
-    completed: 0,
-  });
   const [activeTab, setActiveTab] = useState("pending");
-  const [showBanner, setShowBanner] = useState(false);
-  const [bannerTab, setBannerTab] = useState("");
   const [prependOrder, setPrependOrder] = useState({
     pending: null,
     processing: null,
     completed: null,
-  });
-  const [refetchList, setRefetchList] = useState({
-    pending: false,
-    processing: false,
-    completed: false,
   });
 
   const activeTabRef = useRef(activeTab);
@@ -98,25 +81,7 @@ const OrderStatusPage = () => {
         if (data.type === "order_update") {
           refetchStats && refetchStats();
           const order = data.payload;
-          const currentTab = activeTabRef.current;
-          const currentPages = orderPagesRef.current;
-          if (order.status === currentTab) {
-            if (currentPages[currentTab] === 1) {
-              setPrependOrder((prev) => ({ ...prev, [order.status]: order }));
-            } else {
-              setNewOrderTabs((prev) => ({
-                ...prev,
-                [order.status]: (prev[order.status] || 0) + 1,
-              }));
-              setBannerTab(order.status);
-              setShowBanner(true);
-            }
-          } else {
-            setNewOrderTabs((prev) => ({
-              ...prev,
-              [order.status]: (prev[order.status] || 0) + 1,
-            }));
-          }
+          setPrependOrder((prev) => ({ ...prev, [order.status]: order }));
         }
       } catch (e) {
         console.error("[WebSocket] Message parse error", e);
@@ -125,17 +90,11 @@ const OrderStatusPage = () => {
     return () => ws.close();
   }, []);
 
-  console.log({ prependOrder });
 
   // Khi user chuyển tab
   const handleTabChange = (tabKey) => {
     setActiveTab(tabKey);
     setPrependOrder((prev) => ({ ...prev, [tabKey]: null }));
-    if (newOrderTabs[tabKey] > 0) {
-      setRefetchList((prev) => ({ ...prev, [tabKey]: true }));
-      setNewOrderTabs((prev) => ({ ...prev, [tabKey]: 0 }));
-    }
-    setShowBanner(false);
   };
 
   return (
@@ -144,19 +103,6 @@ const OrderStatusPage = () => {
       subtitle="Quản lý và theo dõi tình trạng xử lý đơn hàng"
     >
       <VStack spacing={6} align="stretch">
-        <OrderStatsCards stats={calculateStats(statsData)} />
-        {showBanner && (
-          <NewOrderBanner
-            onReload={() => {
-              setRefetchList((prev) => ({ ...prev, [bannerTab]: true }));
-              setNewOrderTabs((prev) => ({ ...prev, [bannerTab]: 0 }));
-              setShowBanner(false);
-            }}
-            tabLabel={
-              statusConfig.find((s) => s.key === bannerTab)?.label || bannerTab
-            }
-          />
-        )}
         <Card bg={bgColor} border="1px" borderColor={borderColor}>
           <CardBody p={0}>
             <Tabs
@@ -190,7 +136,6 @@ const OrderStatusPage = () => {
                         position="relative"
                       >
                         {statsData?.status_counts?.[status.key] ?? 0}
-                        <NewOrderBadge count={newOrderTabs[status.key]} />
                       </Badge>
                     </HStack>
                   </Tab>
@@ -204,7 +149,6 @@ const OrderStatusPage = () => {
                       page={orderPages[status.key]}
                       onLoadMore={handleLoadMore}
                       prependOrder={prependOrder[status.key]}
-                      refetchList={refetchList[status.key]}
                     />
                   </TabPanel>
                 ))}
