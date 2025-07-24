@@ -105,7 +105,7 @@ const OrderStatusPage = () => {
           <CardBody p={0}>
             <Tabs
               variant="enclosed"
-              colorScheme="blue"
+              colorScheme="cyan"
               onChange={(idx) => handleTabChange(statusConfig[idx].key)}
             >
               <TabList
@@ -123,7 +123,7 @@ const OrderStatusPage = () => {
                     minW="auto"
                     position="relative"
                     _selected={{
-                      bg: "blue.100",
+                      bg: "cyan.500",
                       color: "white",
                     }}
                   >

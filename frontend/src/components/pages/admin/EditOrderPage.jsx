@@ -82,8 +82,8 @@ const EditOrderContent = () => {
   // Load order data when fetched
   useEffect(() => {
     if (orderData) {
-      setFormData(order);
-      setInitialData(order);
+      setFormData(orderData);
+      setInitialData(orderData);
     }
   }, [orderData, setFormData, setInitialData]);
 
@@ -101,14 +101,13 @@ const EditOrderContent = () => {
     }
   }, [formData, orderData, checkDirty, isDirty, markAsDirty, markAsClean]);
 
-  const order = orderData;
   const products = productsData?.products || [];
   const paymentMethods = paymentMethodsData || [];
 
   return (
     <OrderMutationContent
       // Page props
-      title={`Chỉnh sửa đơn hàng ${order?.order_number || ""}`}
+      title={`Chỉnh sửa đơn hàng ${orderData?.order_number || ""}`}
       pageTitle="Chỉnh sửa đơn hàng"
       backAction={{
         label: "Quay lại",
@@ -118,7 +117,7 @@ const EditOrderContent = () => {
       // Data
       products={products}
       paymentMethods={paymentMethods}
-      order={order}
+      order={orderData}
       // Loading states
       isLoadingProducts={isLoadingProducts}
       isLoadingOrder={isLoadingOrder}
