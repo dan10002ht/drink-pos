@@ -51,7 +51,13 @@ const DashboardLayout = () => {
         </Flex>
       </Box>
 
-      <Box display="flex" flex="1" minH="0">
+      <Box
+        display="flex"
+        flex="1"
+        minH="0"
+        overflowX="hidden"
+        overflowY="hidden"
+      >
         {/* Sidebar */}
         <Sidebar />
         {/* Main content scrollable */}
@@ -62,7 +68,7 @@ const DashboardLayout = () => {
           pb={{ base: "80px", md: "6" }}
           w="100%"
           minH="0"
-          maxH={{ base: "calc(100vh - 80px)", md: "100vh" }}
+          maxH={{ base: "calc(100vh - 80px)" }}
         >
           <Outlet />
         </Box>

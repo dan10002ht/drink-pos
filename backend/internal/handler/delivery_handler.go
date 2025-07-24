@@ -131,18 +131,18 @@ func (h *DeliveryHandler) ListDeliveryOrders(c *gin.Context) {
 		SortOrder: sortOrder,
 	}
 
-	response, err := h.deliveryService.ListDeliveryOrders(c.Request.Context(), req)
+	resp, err := h.deliveryService.ListDeliveryOrders(c.Request.Context(), req)
 	if err != nil {
 		response.InternalServerError(c, "Failed to list delivery orders: "+err.Error())
 		return
 	}
 
-	response.Success(c, response, "Delivery orders retrieved successfully")
+	response.Success(c, resp, "Delivery orders retrieved successfully")
 }
 
 // AssignShipperToOrder assigns a shipper to an order
 func (h *DeliveryHandler) AssignShipperToOrder(c *gin.Context) {
-	orderID := c.Param("order_id")
+	orderID := c.Param("id")
 	if orderID == "" {
 		response.BadRequest(c, "Order ID is required")
 		return
@@ -175,7 +175,7 @@ func (h *DeliveryHandler) AssignShipperToOrder(c *gin.Context) {
 
 // SplitOrder splits an order into multiple delivery orders
 func (h *DeliveryHandler) SplitOrder(c *gin.Context) {
-	orderID := c.Param("order_id")
+	orderID := c.Param("id")
 	if orderID == "" {
 		response.BadRequest(c, "Order ID is required")
 		return
@@ -208,7 +208,7 @@ func (h *DeliveryHandler) SplitOrder(c *gin.Context) {
 
 // GetDeliveryOrdersByOrderID gets all delivery orders for a specific order
 func (h *DeliveryHandler) GetDeliveryOrdersByOrderID(c *gin.Context) {
-	orderID := c.Param("order_id")
+	orderID := c.Param("id")
 	if orderID == "" {
 		response.BadRequest(c, "Order ID is required")
 		return

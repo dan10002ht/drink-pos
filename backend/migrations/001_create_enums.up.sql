@@ -1,3 +1,4 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 001_create_enums.up.sql
 
 -- Create order_status enum

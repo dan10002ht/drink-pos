@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"net/http"
 	"strconv"
 
 	"food-pos-backend/internal/model"
 	"food-pos-backend/internal/service"
+	"food-pos-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -25,46 +25,46 @@ func NewShipperHandler(shipperService *service.ShipperService) *ShipperHandler {
 func (h *ShipperHandler) CreateShipper(c *gin.Context) {
 	var req model.CreateShipperRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		response.Unauthorized(c, "User not authenticated")
 		return
 	}
 
 	userUUID, err := uuid.Parse(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		response.BadRequest(c, "Invalid user ID")
 		return
 	}
 
 	shipper, err := h.shipperService.CreateShipper(c.Request.Context(), &req, userUUID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalServerError(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, model.ShipperResponse{Shipper: *shipper})
+	response.Success(c, model.ShipperResponse{Shipper: *shipper}, "Shipper created successfully")
 }
 
 // GetShipper gets shipper by public ID
 func (h *ShipperHandler) GetShipper(c *gin.Context) {
 	publicID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid shipper ID"})
+		response.BadRequest(c, "Invalid shipper ID")
 		return
 	}
 
 	shipper, err := h.shipperService.GetShipper(c.Request.Context(), publicID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Shipper not found"})
+		response.NotFound(c, "Shipper not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, model.ShipperResponse{Shipper: *shipper})
+	response.Success(c, model.ShipperResponse{Shipper: *shipper}, "Shipper fetched successfully")
 }
 
 // ListShippers lists shippers with pagination and filters
@@ -84,74 +84,74 @@ func (h *ShipperHandler) ListShippers(c *gin.Context) {
 		}
 	}
 
-	response, err := h.shipperService.ListShippers(c.Request.Context(), filters, page, limit)
+	resp, err := h.shipperService.ListShippers(c.Request.Context(), filters, page, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalServerError(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	response.Success(c, resp, "Shippers fetched successfully")
 }
 
 // UpdateShipper updates shipper
 func (h *ShipperHandler) UpdateShipper(c *gin.Context) {
 	publicID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid shipper ID"})
+		response.BadRequest(c, "Invalid shipper ID")
 		return
 	}
 
 	var req model.UpdateShipperRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		response.Unauthorized(c, "User not authenticated")
 		return
 	}
 
 	userUUID, err := uuid.Parse(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		response.BadRequest(c, "Invalid user ID")
 		return
 	}
 
 	shipper, err := h.shipperService.UpdateShipper(c.Request.Context(), publicID, &req, userUUID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalServerError(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, model.ShipperResponse{Shipper: *shipper})
+	response.Success(c, model.ShipperResponse{Shipper: *shipper}, "Shipper updated successfully")
 }
 
 // DeleteShipper deletes shipper
 func (h *ShipperHandler) DeleteShipper(c *gin.Context) {
 	publicID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid shipper ID"})
+		response.BadRequest(c, "Invalid shipper ID")
 		return
 	}
 
 	err = h.shipperService.DeleteShipper(c.Request.Context(), publicID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalServerError(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Shipper deleted successfully"})
+	response.Success(c, "Shipper deleted successfully", "Shipper deleted successfully")
 }
 
 // GetActiveShippers gets all active shippers
 func (h *ShipperHandler) GetActiveShippers(c *gin.Context) {
 	shippers, err := h.shipperService.GetActiveShippers(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.InternalServerError(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"shippers": shippers})
-} 
+	response.Success(c, shippers, "Active shippers fetched successfully")
+}

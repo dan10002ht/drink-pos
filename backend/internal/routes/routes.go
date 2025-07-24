@@ -82,9 +82,9 @@ func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handle
 				adminProtected.GET("/deliveries/shippers", deliveryHandler.GetAvailableShippers)
 
 				// Order delivery routes
-				adminProtected.POST("/orders/:order_id/assign-shipper", deliveryHandler.AssignShipperToOrder)
-				adminProtected.POST("/orders/:order_id/split", deliveryHandler.SplitOrder)
-				adminProtected.GET("/orders/:order_id/deliveries", deliveryHandler.GetDeliveryOrdersByOrderID)
+				adminProtected.POST("/orders/:id/assign-shipper", deliveryHandler.AssignShipperToOrder)
+				adminProtected.POST("/orders/:id/split", deliveryHandler.SplitOrder)
+				adminProtected.GET("/orders/:id/deliveries", deliveryHandler.GetDeliveryOrdersByOrderID)
 			}
 		}
 

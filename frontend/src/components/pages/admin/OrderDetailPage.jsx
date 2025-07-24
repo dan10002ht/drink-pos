@@ -392,6 +392,26 @@ const OrderDetailPage = () => {
             </CardBody>
           </Card>
 
+          {/* Shipper Info */}
+          {order.shipper && (
+            <Card>
+              <CardBody>
+                <VStack spacing={2} align="start">
+                  <Text fontSize="lg" fontWeight="semibold">
+                    Thông tin Shipper
+                  </Text>
+                  <HStack spacing={4}>
+                    <Text fontWeight="medium">{order.shipper.name}</Text>
+                    <Text color="gray.600">{order.shipper.phone}</Text>
+                    {order.shipper.email && (
+                      <Text color="gray.600">{order.shipper.email}</Text>
+                    )}
+                  </HStack>
+                </VStack>
+              </CardBody>
+            </Card>
+          )}
+
           {/* Status History */}
           <Card>
             <CardBody>

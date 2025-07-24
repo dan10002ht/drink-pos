@@ -7,10 +7,10 @@ import (
 )
 
 type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
-	Data    any `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 func Success(c *gin.Context, data any, message string) {
@@ -46,4 +46,8 @@ func InternalServerError(c *gin.Context, message string) {
 
 func NotFound(c *gin.Context, message string) {
 	Error(c, http.StatusNotFound, message)
-} 
+}
+
+func Unauthorized(c *gin.Context, message string) {
+	Error(c, http.StatusUnauthorized, message)
+}

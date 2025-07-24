@@ -1,10 +1,5 @@
 -- 009_enhance_shipping_system.up.sql
 
--- Add new order status for ready to ship
-ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'ready_for_delivery';
-
--- (Không cần CREATE TYPE delivery_status vì đã có ở 007)
-
 -- Create delivery_orders table for split orders
 CREATE TABLE IF NOT EXISTS delivery_orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

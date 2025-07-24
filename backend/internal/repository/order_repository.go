@@ -155,21 +155,32 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*m
 		SELECT id, public_id, order_number, customer_name, customer_phone, customer_email,
 			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
-			created_at, updated_at
+			created_at, updated_at, shipper_id
 		FROM orders
 		WHERE public_id = $1
 	`
+	var shipperID sql.NullString
 	err := r.db.QueryRowContext(ctx, orderQuery, publicID).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
-		&order.CreatedAt, &order.UpdatedAt,
+		&order.CreatedAt, &order.UpdatedAt, &shipperID,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("order not found")
 		}
 		return nil, err
+	}
+	if shipperID.Valid && shipperID.String != "" {
+		var shipper model.Shipper
+		shipperQuery := `SELECT public_id, name, phone, email, is_active FROM shippers WHERE id = $1`
+		err := r.db.QueryRowContext(ctx, shipperQuery, shipperID.String).Scan(
+			&shipper.PublicID, &shipper.Name, &shipper.Phone, &shipper.Email, &shipper.IsActive,
+		)
+		if err == nil {
+			order.Shipper = &shipper
+		}
 	}
 
 	// Get order items

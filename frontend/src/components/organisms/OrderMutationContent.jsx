@@ -10,6 +10,8 @@ import {
   HStack,
   Text,
   Spinner,
+  Card,
+  CardBody,
 } from "@chakra-ui/react";
 import { FiX } from "react-icons/fi";
 
@@ -23,6 +25,10 @@ import OrderNotes from "./OrderNotes";
 import OrderSummary from "./OrderSummary";
 import OrderInfo from "./OrderInfo";
 import { useFetchApi } from "../../hooks/useFetchApi";
+import {
+  FormControl,
+  FormLabel,
+} from "@chakra-ui/react";
 
 const OrderMutationContent = ({
   // Page props
@@ -62,9 +68,20 @@ const OrderMutationContent = ({
   });
   const statuses = statusesData || [];
 
+  // Fetch shippers
+  const { data: shippers, isLoading: isLoadingShippers } = useFetchApi({
+    url: "/admin/shippers/active",
+    protected: true,
+  });
+
   // Handler đổi trạng thái
   const handleStatusChange = (e) => {
     setFormData((prev) => ({ ...prev, status: e.target.value }));
+  };
+
+  // Handler chọn shipper
+  const handleShipperChange = (e) => {
+    setFormData((prev) => ({ ...prev, shipper_id: e.target.value }));
   };
 
   // Loading state
@@ -122,33 +139,58 @@ const OrderMutationContent = ({
         backAction={backAction}
       >
         <VStack spacing={6} align="stretch">
+          {/* Trạng thái & Shipper */}
+          <Card>
+            <CardBody>
+              <VStack spacing={4} align="stretch">
+                <FormControl>
+                  <FormLabel>Trạng thái đơn hàng</FormLabel>
+                  {isLoadingStatuses ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Select
+                      value={
+                        formData.status ||
+                        (mode === "create" ? "pending" : order?.status) ||
+                        ""
+                      }
+                      onChange={handleStatusChange}
+                      size="md"
+                    >
+                      {statuses.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label || s.value}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Shipper</FormLabel>
+                  {isLoadingShippers ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Select
+                      placeholder="Chọn shipper (không bắt buộc)"
+                      value={formData.shipper_id || ""}
+                      onChange={handleShipperChange}
+                      size="md"
+                    >
+                      <option value="">-- Không gán shipper --</option>
+                      {shippers && shippers.length > 0 &&
+                        shippers.map((shipper) => (
+                          <option key={shipper.public_id} value={shipper.public_id}>
+                            {shipper.name} - {shipper.phone}
+                          </option>
+                        ))}
+                    </Select>
+                  )}
+                </FormControl>
+              </VStack>
+            </CardBody>
+          </Card>
           {/* Order Info - chỉ hiển thị trong edit mode */}
-          <>
-            <OrderInfo order={order} />
-            <HStack spacing={4} align="center">
-              <Text fontWeight="medium">Trạng thái đơn hàng:</Text>
-              {isLoadingStatuses ? (
-                <Spinner size="sm" />
-              ) : (
-                <Select
-                  value={
-                    formData.status ||
-                    (mode === "create" ? "pending" : order?.status) ||
-                    ""
-                  }
-                  onChange={handleStatusChange}
-                  maxW="200px"
-                  size="sm"
-                >
-                  {statuses.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label || s.value}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </HStack>
-          </>
+          <OrderInfo order={order} />
           {/* Common components */}
           <OrderCustomerInfo paymentMethods={paymentMethods} />
           <OrderItems products={products} />
