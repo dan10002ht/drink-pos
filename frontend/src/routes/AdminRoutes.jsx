@@ -18,6 +18,7 @@ import EditOrderPage from "../components/pages/admin/EditOrderPage";
 import ShipperPage from "../components/pages/admin/ShipperPage";
 
 import OrderStatusPage from "../components/pages/admin/OrderStatusPage";
+import AssignShipperPage from "../components/pages/admin/AssignShipperPage";
 import MorePage from "../components/pages/admin/MorePage";
 
 const AdminRoutes = () => {
@@ -50,6 +51,7 @@ const AdminRoutes = () => {
         <Route path="orders/create" element={<CreateOrderPage />} />
         <Route path="orders/:id" element={<OrderDetailPage />} />
         <Route path="orders/:id/edit" element={<EditOrderPage />} />
+        <Route path="orders/:id/assign-shipper" element={<AssignShipperPage />} />
         <Route path="order-status" element={<OrderStatusPage />} />
         <Route path="shippers" element={<ShipperPage />} />
         <Route path="shippers/create" element={<ShipperPage />} />

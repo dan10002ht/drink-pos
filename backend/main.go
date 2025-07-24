@@ -45,6 +45,7 @@ func main() {
 	productRepo := repository.NewProductRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	shipperRepo := repository.NewShipperRepository(db)
+	deliveryRepo := repository.NewDeliveryRepository(db)
 	userRepo := repository.NewUserRepository()
 
 	// Initialize WebSocket Hub (singleton)
@@ -57,6 +58,7 @@ func main() {
 	variantService := service.NewVariantService(variantRepo)
 	orderService := service.NewOrderService(orderRepo, userRepo, hub)
 	shipperService := service.NewShipperService(shipperRepo)
+	deliveryService := service.NewDeliveryService(deliveryRepo, orderRepo, hub)
 
 	// Initialize handlers
 	adminHandler := handler.NewAdminHandler(jwtService)
@@ -65,10 +67,11 @@ func main() {
 	ingredientHandler := handler.NewIngredientHandler(ingredientService)
 	orderHandler := handler.NewOrderHandler(orderService, orderRepo, jwtService)
 	shipperHandler := handler.NewShipperHandler(shipperService)
+	deliveryHandler := handler.NewDeliveryHandler(deliveryService, deliveryRepo, jwtService)
 	wsHandler := handler.NewWebSocketHandler(hub)
 
 	// Setup all routes
-	routes.SetupRoutes(r, jwtService, adminHandler, productHandler, variantHandler, ingredientHandler, orderHandler, shipperHandler, wsHandler)
+	routes.SetupRoutes(r, jwtService, adminHandler, productHandler, variantHandler, ingredientHandler, orderHandler, shipperHandler, deliveryHandler, wsHandler)
 
 	log.Printf("Server started at :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

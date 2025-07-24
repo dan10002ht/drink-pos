@@ -10,7 +10,7 @@ import (
 )
 
 // SetupRoutes configures all routes for the application
-func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handler.AdminHandler, productHandler *handler.ProductHandler, variantHandler *handler.VariantHandler, ingredientHandler *handler.IngredientHandler, orderHandler *handler.OrderHandler, shipperHandler *handler.ShipperHandler, wsHandler *handler.WebSocketHandler) {
+func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handler.AdminHandler, productHandler *handler.ProductHandler, variantHandler *handler.VariantHandler, ingredientHandler *handler.IngredientHandler, orderHandler *handler.OrderHandler, shipperHandler *handler.ShipperHandler, deliveryHandler *handler.DeliveryHandler, wsHandler *handler.WebSocketHandler) {
 	// Add WebSocket route (public, can add auth later)
 	r.GET("/ws", wsHandler.HandleWebSocket)
 
@@ -71,6 +71,20 @@ func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handle
 				adminProtected.PUT("/shippers/:id", shipperHandler.UpdateShipper)
 				adminProtected.DELETE("/shippers/:id", shipperHandler.DeleteShipper)
 				adminProtected.GET("/shippers/active", shipperHandler.GetActiveShippers)
+
+				// Delivery routes
+				adminProtected.POST("/deliveries", deliveryHandler.CreateDeliveryOrder)
+				adminProtected.GET("/deliveries", deliveryHandler.ListDeliveryOrders)
+				adminProtected.GET("/deliveries/:id", deliveryHandler.GetDeliveryOrderByID)
+				adminProtected.PUT("/deliveries/:id", deliveryHandler.UpdateDeliveryOrder)
+				adminProtected.PUT("/deliveries/:id/status", deliveryHandler.UpdateDeliveryStatus)
+				adminProtected.GET("/deliveries/statuses", deliveryHandler.GetDeliveryStatuses)
+				adminProtected.GET("/deliveries/shippers", deliveryHandler.GetAvailableShippers)
+
+				// Order delivery routes
+				adminProtected.POST("/orders/:order_id/assign-shipper", deliveryHandler.AssignShipperToOrder)
+				adminProtected.POST("/orders/:order_id/split", deliveryHandler.SplitOrder)
+				adminProtected.GET("/orders/:order_id/deliveries", deliveryHandler.GetDeliveryOrdersByOrderID)
 			}
 		}
 

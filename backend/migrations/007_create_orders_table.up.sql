@@ -1,13 +1,5 @@
 -- 007_create_orders_table.up.sql
 
--- (order_status enum moved to 001_create_order_status_enum.up.sql)
-
--- Create discount type enum
-CREATE TYPE discount_type AS ENUM (
-    'percentage',   -- Giảm theo phần trăm
-    'fixed_amount'  -- Giảm theo số tiền cố định
-); 
-
 -- Create orders table
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -30,7 +22,12 @@ CREATE TABLE IF NOT EXISTS orders (
     updated_by UUID REFERENCES users(id),
     items_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Các trường delivery mới
+    delivery_status delivery_status DEFAULT 'pending',
+    estimated_delivery_time TIMESTAMP,
+    actual_delivery_time TIMESTAMP,
+    delivery_notes TEXT
 );
 
 -- Create order items table

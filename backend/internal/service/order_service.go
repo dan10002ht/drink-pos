@@ -176,10 +176,15 @@ func (s *OrderService) validateStatusTransition(ctx context.Context, orderID str
 		},
 		model.OrderStatusProcessing: {
 			model.OrderStatusCompleted,
+			model.OrderStatusReadyForDelivery,
 			model.OrderStatusCancelled,
 		},
 		model.OrderStatusCompleted: {
-			// Cannot transition from completed
+			model.OrderStatusReadyForDelivery,
+		},
+		model.OrderStatusReadyForDelivery: {
+			model.OrderStatusCompleted,
+			model.OrderStatusCancelled,
 		},
 		model.OrderStatusCancelled: {
 			// Cannot transition from cancelled

@@ -9,10 +9,24 @@ import (
 type OrderStatus string
 
 const (
-	OrderStatusPending    OrderStatus = "pending"    // Chờ xử lý
-	OrderStatusProcessing OrderStatus = "processing" // Đang xử lý
-	OrderStatusCompleted  OrderStatus = "completed"  // Đã xử lý
-	OrderStatusCancelled  OrderStatus = "cancelled"  // Đã hủy
+	OrderStatusPending          OrderStatus = "pending"            // Chờ xử lý
+	OrderStatusProcessing       OrderStatus = "processing"         // Đang xử lý
+	OrderStatusCompleted        OrderStatus = "completed"          // Đã xử lý
+	OrderStatusReadyForDelivery OrderStatus = "ready_for_delivery" // Sẵn sàng giao hàng
+	OrderStatusCancelled        OrderStatus = "cancelled"          // Đã hủy
+)
+
+// Delivery Status Enum
+type DeliveryStatus string
+
+const (
+	DeliveryStatusPending   DeliveryStatus = "pending"    // Chờ giao hàng
+	DeliveryStatusAssigned  DeliveryStatus = "assigned"   // Đã assign shipper
+	DeliveryStatusPickedUp  DeliveryStatus = "picked_up"  // Shipper đã nhận hàng
+	DeliveryStatusInTransit DeliveryStatus = "in_transit" // Đang giao hàng
+	DeliveryStatusDelivered DeliveryStatus = "delivered"  // Đã giao hàng thành công
+	DeliveryStatusFailed    DeliveryStatus = "failed"     // Giao hàng thất bại
+	DeliveryStatusCancelled DeliveryStatus = "cancelled"  // Đã hủy giao hàng
 )
 
 // Discount Type Enum
@@ -34,35 +48,40 @@ const (
 
 // Order Model
 type Order struct {
-	ID             string         `json:"-" db:"id"`
-	PublicID       string         `json:"id" db:"public_id"`
-	OrderNumber    string         `json:"order_number" db:"order_number"`
-	CustomerName   string         `json:"customer_name" db:"customer_name"`
-	CustomerPhone  string         `json:"customer_phone" db:"customer_phone"`
-	CustomerEmail  string         `json:"customer_email" db:"customer_email"`
-	Status         OrderStatus    `json:"status" db:"status"`
-	Subtotal       float64        `json:"subtotal" db:"subtotal"`
-	DiscountAmount float64        `json:"discount_amount" db:"discount_amount"`
-	DiscountType   *DiscountType  `json:"discount_type" db:"discount_type"`
-	DiscountCode   string         `json:"discount_code" db:"discount_code"`
-	DiscountNote   sql.NullString `json:"discount_note" db:"discount_note"`
-	TotalAmount    float64        `json:"total_amount" db:"total_amount"`
-	PaymentMethod  string         `json:"payment_method" db:"payment_method"`
-	PaymentStatus  PaymentStatus  `json:"payment_status" db:"payment_status"`
-	Notes          sql.NullString `json:"notes" db:"notes"`
-	ShipperID      *string        `json:"shipper_id" db:"shipper_id"`
-	CreatedBy      string         `json:"created_by" db:"created_by"`
-	UpdatedBy      string         `json:"updated_by" db:"updated_by"`
-	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at" db:"updated_at"`
-	ItemsCount     int            `json:"items_count" db:"items_count"`
+	ID                    string         `json:"-" db:"id"`
+	PublicID              string         `json:"id" db:"public_id"`
+	OrderNumber           string         `json:"order_number" db:"order_number"`
+	CustomerName          string         `json:"customer_name" db:"customer_name"`
+	CustomerPhone         string         `json:"customer_phone" db:"customer_phone"`
+	CustomerEmail         string         `json:"customer_email" db:"customer_email"`
+	Status                OrderStatus    `json:"status" db:"status"`
+	Subtotal              float64        `json:"subtotal" db:"subtotal"`
+	DiscountAmount        float64        `json:"discount_amount" db:"discount_amount"`
+	DiscountType          *DiscountType  `json:"discount_type" db:"discount_type"`
+	DiscountCode          string         `json:"discount_code" db:"discount_code"`
+	DiscountNote          sql.NullString `json:"discount_note" db:"discount_note"`
+	TotalAmount           float64        `json:"total_amount" db:"total_amount"`
+	PaymentMethod         string         `json:"payment_method" db:"payment_method"`
+	PaymentStatus         PaymentStatus  `json:"payment_status" db:"payment_status"`
+	Notes                 sql.NullString `json:"notes" db:"notes"`
+	ShipperID             *string        `json:"shipper_id" db:"shipper_id"`
+	DeliveryStatus        DeliveryStatus `json:"delivery_status" db:"delivery_status"`
+	EstimatedDeliveryTime *time.Time     `json:"estimated_delivery_time" db:"estimated_delivery_time"`
+	ActualDeliveryTime    *time.Time     `json:"actual_delivery_time" db:"actual_delivery_time"`
+	DeliveryNotes         sql.NullString `json:"delivery_notes" db:"delivery_notes"`
+	CreatedBy             string         `json:"created_by" db:"created_by"`
+	UpdatedBy             string         `json:"updated_by" db:"updated_by"`
+	CreatedAt             time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt             time.Time      `json:"updated_at" db:"updated_at"`
+	ItemsCount            int            `json:"items_count" db:"items_count"`
 
 	// Relations
-	Items         []OrderItem          `json:"items,omitempty"`
-	StatusHistory []OrderStatusHistory `json:"status_history,omitempty"`
-	CreatedByUser *User                `json:"created_by_user,omitempty"`
-	UpdatedByUser *User                `json:"updated_by_user,omitempty"`
-	Shipper       *Shipper             `json:"shipper,omitempty"`
+	Items          []OrderItem          `json:"items,omitempty"`
+	StatusHistory  []OrderStatusHistory `json:"status_history,omitempty"`
+	CreatedByUser  *User                `json:"created_by_user,omitempty"`
+	UpdatedByUser  *User                `json:"updated_by_user,omitempty"`
+	Shipper        *Shipper             `json:"shipper,omitempty"`
+	DeliveryOrders []DeliveryOrder      `json:"delivery_orders,omitempty"`
 }
 
 // Order Item Model
@@ -253,4 +272,93 @@ type DailyOrderStats struct {
 	Date       string  `json:"date"`
 	OrderCount int     `json:"order_count"`
 	Revenue    float64 `json:"revenue"`
+}
+
+// Delivery Order Model
+type DeliveryOrder struct {
+	ID                    string         `json:"-" db:"id"`
+	PublicID              string         `json:"id" db:"public_id"`
+	OrderID               string         `json:"order_id" db:"order_id"`
+	ShipperID             *string        `json:"shipper_id" db:"shipper_id"`
+	DeliveryNumber        string         `json:"delivery_number" db:"delivery_number"`
+	Status                DeliveryStatus `json:"status" db:"status"`
+	EstimatedDeliveryTime *time.Time     `json:"estimated_delivery_time" db:"estimated_delivery_time"`
+	ActualDeliveryTime    *time.Time     `json:"actual_delivery_time" db:"actual_delivery_time"`
+	DeliveryNotes         sql.NullString `json:"delivery_notes" db:"delivery_notes"`
+	CreatedBy             string         `json:"created_by" db:"created_by"`
+	UpdatedBy             string         `json:"updated_by" db:"updated_by"`
+	CreatedAt             time.Time      `json:"created_at" db:"created_at"`
+	UpdatedAt             time.Time      `json:"updated_at" db:"updated_at"`
+
+	// Relations
+	Order              *Order              `json:"order,omitempty"`
+	Shipper            *Shipper            `json:"shipper,omitempty"`
+	DeliveryOrderItems []DeliveryOrderItem `json:"delivery_order_items,omitempty"`
+	CreatedByUser      *User               `json:"created_by_user,omitempty"`
+	UpdatedByUser      *User               `json:"updated_by_user,omitempty"`
+}
+
+// Delivery Order Item Model
+type DeliveryOrderItem struct {
+	ID              string    `json:"-" db:"id"`
+	DeliveryOrderID string    `json:"delivery_order_id" db:"delivery_order_id"`
+	OrderItemID     string    `json:"order_item_id" db:"order_item_id"`
+	Quantity        int       `json:"quantity" db:"quantity"`
+	CreatedAt       time.Time `json:"created_at" db:"created_at"`
+
+	// Relations
+	OrderItem *OrderItem `json:"order_item,omitempty"`
+}
+
+// Request/Response Models for Delivery
+
+type CreateDeliveryOrderRequest struct {
+	OrderID               string                `json:"order_id" validate:"required"`
+	ShipperID             string                `json:"shipper_id" validate:"required"`
+	EstimatedDeliveryTime *time.Time            `json:"estimated_delivery_time"`
+	DeliveryNotes         string                `json:"delivery_notes" validate:"omitempty,max=500"`
+	Items                 []DeliveryItemRequest `json:"items" validate:"required,min=1,dive"`
+}
+
+type DeliveryItemRequest struct {
+	OrderItemID string `json:"order_item_id" validate:"required"`
+	Quantity    int    `json:"quantity" validate:"required,min=1"`
+}
+
+type UpdateDeliveryOrderRequest struct {
+	ShipperID             *string         `json:"shipper_id"`
+	Status                *DeliveryStatus `json:"status"`
+	EstimatedDeliveryTime *time.Time      `json:"estimated_delivery_time"`
+	ActualDeliveryTime    *time.Time      `json:"actual_delivery_time"`
+	DeliveryNotes         string          `json:"delivery_notes" validate:"omitempty,max=500"`
+}
+
+type AssignShipperRequest struct {
+	ShipperID             string     `json:"shipper_id" validate:"required"`
+	EstimatedDeliveryTime *time.Time `json:"estimated_delivery_time"`
+	DeliveryNotes         string     `json:"delivery_notes" validate:"omitempty,max=500"`
+	SplitOrder            bool       `json:"split_order"` // Whether to split the order into multiple deliveries
+}
+
+type SplitOrderRequest struct {
+	Deliveries []CreateDeliveryOrderRequest `json:"deliveries" validate:"required,min=1,dive"`
+}
+
+// List Delivery Orders Request/Response
+type ListDeliveryOrdersRequest struct {
+	Page      int             `json:"page" validate:"gte=1"`
+	Limit     int             `json:"limit" validate:"gte=1,lte=100"`
+	OrderID   string          `json:"order_id"`
+	ShipperID string          `json:"shipper_id"`
+	Status    *DeliveryStatus `json:"status"`
+	SortBy    string          `json:"sort_by"`
+	SortOrder string          `json:"sort_order"`
+}
+
+type ListDeliveryOrdersResponse struct {
+	DeliveryOrders []*DeliveryOrder `json:"delivery_orders"`
+	Total          int              `json:"total"`
+	Page           int              `json:"page"`
+	Limit          int              `json:"limit"`
+	Pages          int              `json:"pages"`
 }

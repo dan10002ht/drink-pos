@@ -382,7 +382,7 @@ run_migrations() {
 
     # Copy migration files to container
     print_status "Copying migration files to PostgreSQL container..."
-    docker cp backend/migrations/001_create_order_status_enum.up.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/001_create_enums.up.sql food_pos_postgres_dev:/tmp/
     docker cp backend/migrations/002_create_products_table.up.sql food_pos_postgres_dev:/tmp/
     docker cp backend/migrations/003_create_users_table.up.sql food_pos_postgres_dev:/tmp/
     docker cp backend/migrations/004_create_variants_table.up.sql food_pos_postgres_dev:/tmp/
@@ -393,10 +393,14 @@ run_migrations() {
     if [ -f backend/migrations/008_create_shippers.up.sql ]; then
         docker cp backend/migrations/008_create_shippers.up.sql food_pos_postgres_dev:/tmp/
     fi
+    # Nếu có shipping system:
+    if [ -f backend/migrations/009_enhance_shipping_system.up.sql ]; then
+        docker cp backend/migrations/009_enhance_shipping_system.up.sql food_pos_postgres_dev:/tmp/
+    fi
 
     # Run migrations in order
-    print_status "Running migration: 001_create_order_status_enum.up.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_order_status_enum.up.sql
+    print_status "Running migration: 001_create_enums.up.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_enums.up.sql
 
     print_status "Running migration: 002_create_products_table.up.sql"
     docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/002_create_products_table.up.sql
@@ -422,6 +426,12 @@ run_migrations() {
         docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/008_create_shippers.up.sql
     fi
 
+    # Nếu có shipping system:
+    if [ -f backend/migrations/009_enhance_shipping_system.up.sql ]; then
+        print_status "Running migration: 009_enhance_shipping_system.up.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/009_enhance_shipping_system.up.sql
+    fi
+
     print_success "Database migrations completed successfully!"
 }
 
@@ -437,19 +447,56 @@ rollback_migrations() {
     
     # Copy migration files to container
     print_status "Copying migration files to PostgreSQL container..."
-    docker cp backend/migrations/002_create_variants_table.down.sql food_pos_postgres_dev:/tmp/
-    docker cp backend/migrations/001_create_products_table.down.sql food_pos_postgres_dev:/tmp/
-    docker cp backend/migrations/001_create_users_table.down.sql food_pos_postgres_dev:/tmp/
+    
+    # Nếu có shipping system rollback:
+    if [ -f backend/migrations/009_enhance_shipping_system.down.sql ]; then
+        docker cp backend/migrations/009_enhance_shipping_system.down.sql food_pos_postgres_dev:/tmp/
+    fi
+    
+    # Nếu có shippers rollback:
+    if [ -f backend/migrations/008_create_shippers.down.sql ]; then
+        docker cp backend/migrations/008_create_shippers.down.sql food_pos_postgres_dev:/tmp/
+    fi
+    
+    docker cp backend/migrations/007_create_orders_table.down.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/006_create_variant_ingredients_table.down.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/005_create_ingredients_table.down.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/004_create_variants_table.down.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/003_create_users_table.down.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/002_create_products_table.down.sql food_pos_postgres_dev:/tmp/
+    docker cp backend/migrations/001_create_enums.down.sql food_pos_postgres_dev:/tmp/
     
     # Run rollbacks in reverse order
-    print_status "Rolling back migration: 002_create_variants_table.down.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/002_create_variants_table.down.sql
+    if [ -f backend/migrations/009_enhance_shipping_system.down.sql ]; then
+        print_status "Rolling back migration: 009_enhance_shipping_system.down.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/009_enhance_shipping_system.down.sql
+    fi
     
-    print_status "Rolling back migration: 001_create_products_table.down.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_products_table.down.sql
+    if [ -f backend/migrations/008_create_shippers.down.sql ]; then
+        print_status "Rolling back migration: 008_create_shippers.down.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/008_create_shippers.down.sql
+    fi
     
-    print_status "Rolling back migration: 001_create_users_table.down.sql"
-    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_users_table.down.sql
+    print_status "Rolling back migration: 007_create_orders_table.down.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/007_create_orders_table.down.sql
+    
+    print_status "Rolling back migration: 006_create_variant_ingredients_table.down.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/006_create_variant_ingredients_table.down.sql
+    
+    print_status "Rolling back migration: 005_create_ingredients_table.down.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/005_create_ingredients_table.down.sql
+    
+    print_status "Rolling back migration: 004_create_variants_table.down.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/004_create_variants_table.down.sql
+    
+    print_status "Rolling back migration: 003_create_users_table.down.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/003_create_users_table.down.sql
+    
+    print_status "Rolling back migration: 002_create_products_table.down.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/002_create_products_table.down.sql
+    
+    print_status "Rolling back migration: 001_create_enums.down.sql"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/001_create_enums.down.sql
     
     print_success "Database rollback completed successfully!"
 }
@@ -557,6 +604,16 @@ case "${1:-}" in
     "migrate")
         run_migrations
         ;;
+    "migrate-shipping")
+        print_status "Running shipping system migration..."
+        if [ -f backend/migrations/009_enhance_shipping_system.up.sql ]; then
+            docker cp backend/migrations/009_enhance_shipping_system.up.sql food_pos_postgres_dev:/tmp/
+            docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/009_enhance_shipping_system.up.sql
+            print_success "Shipping system migration completed!"
+        else
+            print_error "Shipping system migration file not found!"
+        fi
+        ;;
     "rollback")
         rollback_migrations
         ;;
@@ -578,6 +635,7 @@ case "${1:-}" in
         echo "  status    - Show service status"
         echo "  cleanup   - Clean up everything"
         echo "  migrate   - Run database migrations"
+        echo "  migrate-shipping - Run shipping system migration only"
         echo "  rollback  - Rollback database migrations"
         echo "  seed      - Seed database"
         echo "  killports - Kill processes on development ports"

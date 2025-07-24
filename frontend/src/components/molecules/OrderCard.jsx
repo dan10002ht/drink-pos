@@ -9,18 +9,22 @@ import {
   IconButton,
   useColorModeValue,
   Button,
+  Tooltip,
 } from "@chakra-ui/react";
-import { FiEye, FiEdit } from "react-icons/fi";
+import { FiEye, FiEdit, FiTruck, FiPackage } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency, formatTimeAgo } from "../../utils/formatters";
 import {
   validTransitions,
   getStatusLabel,
   getStatusColor,
+  canAssignShipper,
+  getDeliveryStatusLabel,
+  getDeliveryStatusColor,
 } from "../../utils/orderHelpers";
 import { useEditApi } from "../../hooks/useEditApi";
 
-const OrderCard = ({ order, status, refetch }) => {
+const OrderCard = ({ order, refetch }) => {
   const navigate = useNavigate();
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const itemBgColor = useColorModeValue("gray.50", "gray.700");
@@ -41,112 +45,139 @@ const OrderCard = ({ order, status, refetch }) => {
     updateOrderStatus({ status: newStatus }, { onSuccess: refetch });
   };
 
+  // Check if can assign shipper
+  const canAssign = canAssignShipper(order.status);
+
   return (
     <Box
-      p={{ base: 3, md: 4 }}
-      bg={itemBgColor}
-      borderRadius="lg"
       border="1px"
-      borderColor="transparent"
-      _hover={{
-        borderColor: borderColor,
-        cursor: "pointer",
-        transform: "translateY(-1px)",
-        boxShadow: "md",
-      }}
+      borderColor={borderColor}
+      borderRadius="lg"
+      p={4}
+      bg={useColorModeValue("white", "gray.800")}
+      _hover={{ shadow: "md" }}
       transition="all 0.2s"
     >
-      <VStack spacing={3} align="stretch">
+      <VStack align="stretch" spacing={3}>
         {/* Header */}
         <Flex justify="space-between" align="center">
-          <HStack spacing={3}>
-            <Text
-              fontWeight="bold"
-              fontSize={{ base: "md", md: "lg" }}
-              color="blue.600"
-            >
-              #{order.order_number}
+          <VStack align="start" spacing={1}>
+            <Text fontWeight="bold" fontSize="lg">
+              {order.order_number}
             </Text>
-          </HStack>
-            <Badge colorScheme={getStatusColor(status)}>
-              {getStatusLabel(status)}
+            <Text fontSize="sm" color="gray.500">
+              {formatTimeAgo(order.created_at)}
+            </Text>
+          </VStack>
+          <HStack spacing={2}>
+            <Badge colorScheme={getStatusColor(order.status)}>
+              {getStatusLabel(order.status)}
             </Badge>
-            
+            {order.delivery_status && (
+              <Badge colorScheme={getDeliveryStatusColor(order.delivery_status)}>
+                {getDeliveryStatusLabel(order.delivery_status)}
+              </Badge>
+            )}
+          </HStack>
         </Flex>
 
         {/* Customer Info */}
-        <VStack align="start" spacing={1}>
-          <Text fontWeight="medium" fontSize="md">
-            {order.customer_name}
-          </Text>
+        <Box>
+          <Text fontWeight="medium">{order.customer_name}</Text>
           <Text fontSize="sm" color="gray.600">
-            📞 {order.customer_phone}
+            {order.customer_phone}
           </Text>
-          {order.customer_email && (
-            <Text fontSize="sm" color="gray.600">
-              📧 {order.customer_email}
+        </Box>
+
+        {/* Items Summary */}
+        <Box bg={itemBgColor} p={3} borderRadius="md">
+          <Text fontSize="sm" fontWeight="medium" mb={2}>
+            {order.items_count} sản phẩm
+          </Text>
+          {order.items && order.items.slice(0, 2).map((item, index) => (
+            <Text key={index} fontSize="sm" color="gray.600">
+              {item.quantity}x {item.product_name} - {item.variant_name}
+            </Text>
+          ))}
+          {order.items && order.items.length > 2 && (
+            <Text fontSize="sm" color="gray.500">
+              +{order.items.length - 2} sản phẩm khác
             </Text>
           )}
-        </VStack>
+        </Box>
 
-        {/* Meta Info */}
-        <HStack spacing={4} flexWrap="wrap">
-            <Text
-              fontWeight="bold"
-              fontSize={{ base: "md", md: "lg" }}
-              color="green.600"
-            >
-              {formatCurrency(order.total_amount)}
-            </Text>
-          <Text fontSize="xs" color="gray.500">
-            🕒 {formatTimeAgo(order.created_at)}
-          </Text>
-          {order.items_count && (
-            <Text fontSize="xs" color="gray.500">
-              📦 {order.items_count} sản phẩm
-            </Text>
-          )}
-        </HStack>
-
-        {/* Actions: chuyển trạng thái */}
-        {allowedStatuses.length > 0 && (
-          <HStack spacing={2} mt={2}>
-            {allowedStatuses.map((nextStatus) => (
-              <Button
-                key={nextStatus}
-                size="xs"
-                colorScheme={getStatusColor(nextStatus)}
-                variant="outline"
-                isLoading={isUpdatingStatus}
-                onClick={() => handleChangeStatus(nextStatus)}
-              >
-                {getStatusLabel(nextStatus)}
-              </Button>
-            ))}
-          </HStack>
-        )}
-
-        {/* Actions */}
+        {/* Total */}
         <Flex justify="space-between" align="center">
+          <Text fontWeight="bold" fontSize="lg">
+            {formatCurrency(order.total_amount)}
+          </Text>
           <HStack spacing={2}>
-            <IconButton
-              icon={<FiEye />}
-              size="sm"
-              variant="outline"
-              colorScheme="blue"
-              onClick={() => navigate(`/admin/orders/${order.id}`)}
-              aria-label="Xem chi tiết"
-            />
-            <IconButton
-              icon={<FiEdit />}
-              size="sm"
-              variant="outline"
-              colorScheme="orange"
-              onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
-              aria-label="Chỉnh sửa"
-            />
+            {canAssign && (
+              <Tooltip label="Assign shipper">
+                <IconButton
+                  size="sm"
+                  colorScheme="blue"
+                  icon={<FiTruck />}
+                  onClick={() => navigate(`/admin/orders/${order.id}/assign-shipper`)}
+                  aria-label="Assign shipper"
+                />
+              </Tooltip>
+            )}
+            <Tooltip label="Xem chi tiết">
+              <IconButton
+                size="sm"
+                colorScheme="teal"
+                icon={<FiEye />}
+                onClick={() => navigate(`/admin/orders/${order.id}`)}
+                aria-label="View order"
+              />
+            </Tooltip>
+            <Tooltip label="Chỉnh sửa">
+              <IconButton
+                size="sm"
+                colorScheme="orange"
+                icon={<FiEdit />}
+                onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
+                aria-label="Edit order"
+              />
+            </Tooltip>
           </HStack>
         </Flex>
+
+        {/* Status Actions */}
+        {allowedStatuses.length > 0 && (
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" mb={2}>
+              Chuyển trạng thái:
+            </Text>
+            <HStack spacing={2} flexWrap="wrap">
+              {allowedStatuses.map((status) => (
+                <Button
+                  key={status}
+                  size="xs"
+                  colorScheme={getStatusColor(status)}
+                  variant="outline"
+                  onClick={() => handleChangeStatus(status)}
+                  isLoading={isUpdatingStatus}
+                >
+                  {getStatusLabel(status)}
+                </Button>
+              ))}
+            </HStack>
+          </Box>
+        )}
+
+        {/* Delivery Info */}
+        {order.shipper && (
+          <Box bg="blue.50" p={3} borderRadius="md">
+            <HStack spacing={2}>
+              <FiTruck />
+              <Text fontSize="sm">
+                Shipper: {order.shipper.name} ({order.shipper.phone})
+              </Text>
+            </HStack>
+          </Box>
+        )}
       </VStack>
     </Box>
   );

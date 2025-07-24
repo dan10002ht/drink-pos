@@ -1,1 +1,3 @@
 DROP TYPE IF EXISTS order_status CASCADE; 
+DROP TYPE IF EXISTS discount_type CASCADE;
+DROP TYPE IF EXISTS delivery_status CASCADE;
