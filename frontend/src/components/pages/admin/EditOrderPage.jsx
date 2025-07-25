@@ -82,8 +82,13 @@ const EditOrderContent = () => {
   // Load order data when fetched
   useEffect(() => {
     if (orderData) {
-      setFormData(orderData);
-      setInitialData(orderData);
+      const shipper_id = orderData.shipper.public_id;
+      const toSetData = {
+        ...orderData,
+        shipper_id,
+      };
+      setFormData(toSetData);
+      setInitialData(toSetData);
     }
   }, [orderData, setFormData, setInitialData]);
 

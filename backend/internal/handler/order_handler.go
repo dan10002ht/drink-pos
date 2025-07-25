@@ -39,7 +39,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	userID := ""
+	var userID int64
 	if v, exists := c.Get("user_id"); exists {
 		if s, ok := v.(string); ok {
 			// Get internal user ID from database using public_id
@@ -103,6 +103,8 @@ type OrderResponse struct {
 	DiscountType   *string             `json:"discount_type"`
 	DiscountCode   string              `json:"discount_code"`
 	DiscountNote   *string             `json:"discount_note"`
+	ManualDiscountAmount float64             `json:"manual_discount_amount"`
+	ShippingFee    float64             `json:"shipping_fee"`
 	TotalAmount    float64             `json:"total_amount"`
 	PaymentMethod  string              `json:"payment_method"`
 	PaymentStatus  string              `json:"payment_status"`
@@ -171,34 +173,6 @@ func (h *OrderHandler) toOrderResponse(order *model.Order) *OrderResponse {
 			IsActive: order.Shipper.IsActive,
 		}
 	}
-
-func (h *OrderHandler) toOrderResponse(order *model.Order) *OrderResponse {
-	var notesPtr, discountNotePtr *string
-	if order.Notes.Valid {
-		notesPtr = &order.Notes.String
-	}
-	if order.DiscountNote.Valid {
-		discountNotePtr = &order.DiscountNote.String
-	}
-	var discountTypePtr *string
-	if order.DiscountType != nil {
-		discountTypeStr := string(*order.DiscountType)
-		discountTypePtr = &discountTypeStr
-	}
-	items := make([]OrderItemResponse, 0, len(order.Items))
-	for _, item := range order.Items {
-		items = append(items, toOrderItemResponse(item))
-	}
-	var shipperResp *ShipperResponse
-	if order.Shipper != nil {
-		shipperResp = &ShipperResponse{
-			PublicID: order.Shipper.PublicID.String(),
-			Name:     order.Shipper.Name,
-			Phone:    order.Shipper.Phone,
-			Email:    order.Shipper.Email,
-			IsActive: order.Shipper.IsActive,
-		}
-	}
 	return &OrderResponse{
 		ID:             order.PublicID,
 		OrderNumber:    order.OrderNumber,
@@ -211,6 +185,8 @@ func (h *OrderHandler) toOrderResponse(order *model.Order) *OrderResponse {
 		DiscountType:   discountTypePtr,
 		DiscountCode:   order.DiscountCode,
 		DiscountNote:   discountNotePtr,
+		ManualDiscountAmount: order.ManualDiscountAmount,
+		ShippingFee:    order.ShippingFee,
 		TotalAmount:    order.TotalAmount,
 		PaymentMethod:  order.PaymentMethod,
 		PaymentStatus:  string(order.PaymentStatus),

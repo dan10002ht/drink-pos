@@ -10,7 +10,7 @@ import (
 )
 
 // SetupRoutes configures all routes for the application
-func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handler.AdminHandler, productHandler *handler.ProductHandler, variantHandler *handler.VariantHandler, ingredientHandler *handler.IngredientHandler, orderHandler *handler.OrderHandler, shipperHandler *handler.ShipperHandler, deliveryHandler *handler.DeliveryHandler, wsHandler *handler.WebSocketHandler) {
+func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handler.AdminHandler, productHandler *handler.ProductHandler, variantHandler *handler.VariantHandler, ingredientHandler *handler.IngredientHandler, orderHandler *handler.OrderHandler, shipperHandler *handler.ShipperHandler, deliveryHandler *handler.DeliveryHandler, adminUserHandler *handler.AdminUserHandler, wsHandler *handler.WebSocketHandler) {
 	// Add WebSocket route (public, can add auth later)
 	r.GET("/ws", wsHandler.HandleWebSocket)
 
@@ -85,6 +85,13 @@ func SetupRoutes(r *gin.Engine, jwtService *jwt.JWTService, adminHandler *handle
 				adminProtected.POST("/orders/:id/assign-shipper", deliveryHandler.AssignShipperToOrder)
 				adminProtected.POST("/orders/:id/split", deliveryHandler.SplitOrder)
 				adminProtected.GET("/orders/:id/deliveries", deliveryHandler.GetDeliveryOrdersByOrderID)
+
+				// User management routes
+				adminProtected.GET("/users", adminUserHandler.GetUsers)
+				adminProtected.GET("/users/:id", adminUserHandler.GetUser)
+				adminProtected.POST("/users", adminUserHandler.CreateUser)
+				adminProtected.PUT("/users/:id", adminUserHandler.UpdateUser)
+				adminProtected.DELETE("/users/:id", adminUserHandler.DeleteUser)
 			}
 		}
 

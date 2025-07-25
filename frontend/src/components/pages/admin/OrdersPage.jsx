@@ -25,8 +25,18 @@ import {
   Th,
   Td,
   TableContainer,
+  Collapse,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { FiPlus, FiSearch, FiFilter, FiEye, FiEdit } from "react-icons/fi";
+import {
+  FiPlus,
+  FiSearch,
+  FiFilter,
+  FiEye,
+  FiEdit,
+  FiChevronDown,
+  FiChevronUp,
+} from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -36,6 +46,7 @@ import { useFetchApi } from "../../../hooks/useFetchApi";
 
 const OrdersPage = () => {
   const navigate = useNavigate();
+  const { isOpen: isFilterOpen, onToggle: onFilterToggle } = useDisclosure();
 
   // State
   const [filters, setFilters] = useState({
@@ -163,7 +174,34 @@ const OrdersPage = () => {
         <Card mb={6}>
           <CardBody>
             <VStack spacing={4} align="stretch">
-              {/* Search */}
+              {/* Filter Header */}
+              <HStack justify="space-between" align="center">
+                <HStack spacing={2}>
+                  <FiFilter />
+                  <Text fontSize="lg" fontWeight="semibold">
+                    Bộ lọc
+                  </Text>
+                  {(filters.status ||
+                    filters.date_from ||
+                    filters.date_to ||
+                    filters.search) && (
+                    <Badge colorScheme="blue" size="sm">
+                      Đang lọc
+                    </Badge>
+                  )}
+                </HStack>
+                <Button
+                  _focus={{ outline: "none !important" }}
+                  _hover={{ borderColor: "none !important" }}
+                  size="sm"
+                  variant="ghost"
+                  onClick={onFilterToggle}
+                >
+                  {isFilterOpen ? <FiChevronUp /> : <FiChevronDown />}
+                </Button>
+              </HStack>
+
+              {/* Search - Always visible */}
               <Box>
                 <Text fontSize="sm" fontWeight="medium" mb={2}>
                   Tìm kiếm
@@ -176,88 +214,94 @@ const OrdersPage = () => {
                 />
               </Box>
 
-              {/* Filters Row */}
-              <VStack spacing={3} align="stretch">
-                <HStack spacing={3} wrap="wrap">
-                  <Box flex={1} minW="200px">
-                    <Text fontSize="sm" fontWeight="medium" mb={2}>
-                      Trạng thái
+              {/* Collapsible Filters */}
+              <Collapse in={isFilterOpen} animateOpacity>
+                <VStack spacing={4} align="stretch">
+                  {/* Filters Row */}
+                  <VStack spacing={3} align="stretch">
+                    <HStack spacing={3} wrap="wrap">
+                      <Box flex={1} minW="200px">
+                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                          Trạng thái
+                        </Text>
+                        <Select
+                          value={filters.status}
+                          onChange={(e) =>
+                            handleFilterChange("status", e.target.value)
+                          }
+                          placeholder="Tất cả trạng thái"
+                        >
+                          {statuses.map((status) => (
+                            <option key={status.value} value={status.value}>
+                              {status.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </Box>
+                      <Box flex={1} minW="150px">
+                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                          Từ ngày
+                        </Text>
+                        <Input
+                          type="date"
+                          value={filters.date_from}
+                          onChange={(e) =>
+                            handleFilterChange("date_from", e.target.value)
+                          }
+                        />
+                      </Box>
+                      <Box flex={1} minW="150px">
+                        <Text fontSize="sm" fontWeight="medium" mb={2}>
+                          Đến ngày
+                        </Text>
+                        <Input
+                          type="date"
+                          value={filters.date_to}
+                          onChange={(e) =>
+                            handleFilterChange("date_to", e.target.value)
+                          }
+                        />
+                      </Box>
+                    </HStack>
+                  </VStack>
+
+                  {/* Summary and Sort */}
+                  <VStack spacing={3} align="stretch">
+                    <Text fontSize="sm" color="gray.600">
+                      Tổng cộng: {total} đơn hàng
                     </Text>
-                    <Select
-                      value={filters.status}
-                      onChange={(e) =>
-                        handleFilterChange("status", e.target.value)
-                      }
-                      placeholder="Tất cả trạng thái"
-                    >
-                      {statuses.map((status) => (
-                        <option key={status.value} value={status.value}>
-                          {status.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </Box>
-                  <Box flex={1} minW="150px">
-                    <Text fontSize="sm" fontWeight="medium" mb={2}>
-                      Từ ngày
-                    </Text>
-                    <Input
-                      type="date"
-                      value={filters.date_from}
-                      onChange={(e) =>
-                        handleFilterChange("date_from", e.target.value)
-                      }
-                    />
-                  </Box>
-                  <Box flex={1} minW="150px">
-                    <Text fontSize="sm" fontWeight="medium" mb={2}>
-                      Đến ngày
-                    </Text>
-                    <Input
-                      type="date"
-                      value={filters.date_to}
-                      onChange={(e) =>
-                        handleFilterChange("date_to", e.target.value)
-                      }
-                    />
-                  </Box>
-                </HStack>
-              </VStack>
-              {/* Summary and Sort */}
-              <VStack spacing={3} align="stretch">
-                <Text fontSize="sm" color="gray.600">
-                  Tổng cộng: {total} đơn hàng
-                </Text>
-                <HStack spacing={2} wrap="wrap">
-                  <Text fontSize="sm" color="gray.600">
-                    Sắp xếp theo:
-                  </Text>
-                  <Select
-                    size="sm"
-                    value={filters.sort_by}
-                    onChange={(e) =>
-                      handleFilterChange("sort_by", e.target.value)
-                    }
-                    w={{ base: "full", sm: "150px" }}
-                  >
-                    <option value="created_at">Ngày tạo</option>
-                    <option value="order_number">Mã đơn hàng</option>
-                    <option value="total_amount">Tổng tiền</option>
-                    <option value="customer_name">Tên khách hàng</option>
-                  </Select>
-                  <Select
-                    size="sm"
-                    value={filters.sort_order}
-                    onChange={(e) =>
-                      handleFilterChange("sort_order", e.target.value)
-                    }
-                    w={{ base: "full", sm: "100px" }}
-                  >
-                    <option value="desc">Giảm dần</option>
-                    <option value="asc">Tăng dần</option>
-                  </Select>
-                </HStack>
-              </VStack>
+                    <HStack spacing={2} wrap="wrap">
+                      <Text fontSize="sm" color="gray.600">
+                        Sắp xếp theo:
+                      </Text>
+                      <Select
+                        size="sm"
+                        value={filters.sort_by}
+                        onChange={(e) =>
+                          handleFilterChange("sort_by", e.target.value)
+                        }
+                        w={{ base: "full", sm: "150px" }}
+                      >
+                        <option value="created_at">Ngày tạo</option>
+                        <option value="order_number">Mã đơn hàng</option>
+                        <option value="total_amount">Tổng tiền</option>
+                        <option value="customer_name">Tên khách hàng</option>
+                      </Select>
+                      <Select
+                        size="sm"
+                        value={filters.sort_order}
+                        onChange={(e) =>
+                          handleFilterChange("sort_order", e.target.value)
+                        }
+                        w={{ base: "full", sm: "100px" }}
+                      >
+                        <option value="desc">Giảm dần</option>
+                        <option value="asc">Tăng dần</option>
+                      </Select>
+                    </HStack>
+                  </VStack>
+                </VStack>
+              </Collapse>
             </VStack>
           </CardBody>
         </Card>
@@ -415,7 +459,12 @@ const OrdersPage = () => {
                     </HStack>
                     {order.discount_amount > 0 && (
                       <Text fontSize="sm" color="green.600">
-                        Giảm giá: -{formatCurrency(order.discount_amount)}
+                        Giảm giá:{" "}
+                        {order.discount_type === "percentage"
+                          ? `(-${order.discount_amount}%) -${formatCurrency(
+                              (order.subtotal * order.discount_amount) / 100
+                            )}`
+                          : `-${formatCurrency(order.discount_amount)}`}
                       </Text>
                     )}
                   </VStack>

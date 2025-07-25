@@ -25,7 +25,7 @@ func NewDeliveryService(deliveryRepo *repository.DeliveryRepository, orderRepo *
 }
 
 // CreateDeliveryOrder creates a new delivery order
-func (s *DeliveryService) CreateDeliveryOrder(ctx context.Context, req *model.CreateDeliveryOrderRequest, userID string) (*model.DeliveryOrder, error) {
+func (s *DeliveryService) CreateDeliveryOrder(ctx context.Context, req *model.CreateDeliveryOrderRequest, userID int64) (*model.DeliveryOrder, error) {
 	// Validate request
 	if err := s.validateCreateDeliveryOrderRequest(req); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *DeliveryService) GetDeliveryOrderByID(ctx context.Context, publicID str
 }
 
 // UpdateDeliveryOrder updates delivery order
-func (s *DeliveryService) UpdateDeliveryOrder(ctx context.Context, publicID string, req *model.UpdateDeliveryOrderRequest, userID string) (*model.DeliveryOrder, error) {
+func (s *DeliveryService) UpdateDeliveryOrder(ctx context.Context, publicID string, req *model.UpdateDeliveryOrderRequest, userID int64) (*model.DeliveryOrder, error) {
 	// Validate request
 	if err := s.validateUpdateDeliveryOrderRequest(req); err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (s *DeliveryService) ListDeliveryOrders(ctx context.Context, req *model.Lis
 }
 
 // AssignShipperToOrder assigns a shipper to an order (simple assignment)
-func (s *DeliveryService) AssignShipperToOrder(ctx context.Context, orderID string, req *model.AssignShipperRequest, userID string) error {
+func (s *DeliveryService) AssignShipperToOrder(ctx context.Context, orderID string, req *model.AssignShipperRequest, userID int64) error {
 	// Validate request
 	if err := s.validateAssignShipperRequest(req); err != nil {
 		return err
@@ -146,7 +146,7 @@ func (s *DeliveryService) AssignShipperToOrder(ctx context.Context, orderID stri
 }
 
 // SplitOrder splits an order into multiple delivery orders
-func (s *DeliveryService) SplitOrder(ctx context.Context, orderID string, req *model.SplitOrderRequest, userID string) error {
+func (s *DeliveryService) SplitOrder(ctx context.Context, orderID string, req *model.SplitOrderRequest, userID int64) error {
 	// Validate request
 	if err := s.validateSplitOrderRequest(req); err != nil {
 		return err
@@ -199,7 +199,7 @@ func (s *DeliveryService) GetAvailableShippers(ctx context.Context) ([]*model.Sh
 }
 
 // UpdateDeliveryStatus updates delivery status
-func (s *DeliveryService) UpdateDeliveryStatus(ctx context.Context, deliveryID string, status model.DeliveryStatus, notes string, userID string) (*model.DeliveryOrder, error) {
+func (s *DeliveryService) UpdateDeliveryStatus(ctx context.Context, deliveryID string, status model.DeliveryStatus, notes string, userID int64) (*model.DeliveryOrder, error) {
 	req := &model.UpdateDeliveryOrderRequest{
 		Status:        &status,
 		DeliveryNotes: notes,
@@ -248,7 +248,7 @@ func (s *DeliveryService) validateSplitOrderRequest(req *model.SplitOrderRequest
 	return nil
 }
 
-func (s *DeliveryService) createSplitDeliveries(ctx context.Context, orderID string, req *model.AssignShipperRequest, userID string) error {
+func (s *DeliveryService) createSplitDeliveries(ctx context.Context, orderID string, req *model.AssignShipperRequest, userID int64) error {
 	// Get order items
 	order, err := s.orderRepo.GetOrderByID(ctx, orderID)
 	if err != nil {

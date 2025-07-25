@@ -148,7 +148,7 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 	totalDiscount := order.DiscountAmount + order.ManualDiscountAmount
 	totalAmount := math.Max(0, subtotal-totalDiscount+order.ShippingFee)
 	
-	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userIDInt, len(req.Items), order.ShipperID, order.ID).Scan(
+	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userID, len(req.Items), order.ShipperID, order.ID).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote, &order.ManualDiscountAmount, &order.ShippingFee,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
@@ -184,7 +184,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*m
 		SELECT o.id, o.public_id, o.order_number, o.customer_name, o.customer_phone, o.customer_email,
 			o.status, o.subtotal, o.discount_amount, o.discount_type, o.discount_code, o.discount_note, o.manual_discount_amount, o.shipping_fee,
 			o.total_amount, o.payment_method, o.payment_status, o.notes, o.created_by, o.updated_by,
-			o.created_at, o.updated_at, o.shipper_id,
+			o.created_at, o.updated_at, o.shipper_id, o.items_count,
 			s.public_id, s.name, s.phone, s.email, s.is_active
 		FROM orders o
 		LEFT JOIN shippers s ON o.shipper_id = s.id
@@ -200,7 +200,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*m
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote, &order.ManualDiscountAmount, &order.ShippingFee,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
-		&order.CreatedAt, &order.UpdatedAt, &shipperID,
+		&order.CreatedAt, &order.UpdatedAt, &shipperID, &order.ItemsCount,
 		&shipperPublicID, &shipperName, &shipperPhone, &shipperEmail, &shipperIsActive,
 	)
 
@@ -325,7 +325,7 @@ func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, publicID string
 func (r *OrderRepository) ListOrders(ctx context.Context, req *model.ListOrdersRequest) (*model.ListOrdersResponse, error) {
 	// Build query
 	whereConditions := []string{"1=1"}
-	args := []interface{}{}
+	args := []any{}
 	argIndex := 1
 
 	if req.Status != nil {

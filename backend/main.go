@@ -68,10 +68,11 @@ func main() {
 	orderHandler := handler.NewOrderHandler(orderService, orderRepo, userRepo, jwtService)
 	shipperHandler := handler.NewShipperHandler(shipperService, userRepo)
 	deliveryHandler := handler.NewDeliveryHandler(deliveryService, deliveryRepo, userRepo, jwtService)
+	adminUserHandler := handler.NewAdminUserHandler()
 	wsHandler := handler.NewWebSocketHandler(hub)
 
 	// Setup all routes
-	routes.SetupRoutes(r, jwtService, adminHandler, productHandler, variantHandler, ingredientHandler, orderHandler, shipperHandler, deliveryHandler, wsHandler)
+	routes.SetupRoutes(r, jwtService, adminHandler, productHandler, variantHandler, ingredientHandler, orderHandler, shipperHandler, deliveryHandler, adminUserHandler, wsHandler)
 
 	log.Printf("Server started at :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {

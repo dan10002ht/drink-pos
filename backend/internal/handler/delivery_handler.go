@@ -50,7 +50,7 @@ func (h *DeliveryHandler) CreateDeliveryOrder(c *gin.Context) {
 		return
 	}
 
-	deliveryOrder, err := h.deliveryService.CreateDeliveryOrder(c.Request.Context(), &req, strconv.FormatInt(user.ID, 10))
+	deliveryOrder, err := h.deliveryService.CreateDeliveryOrder(c.Request.Context(), &req, user.ID)
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -107,7 +107,7 @@ func (h *DeliveryHandler) UpdateDeliveryOrder(c *gin.Context) {
 		return
 	}
 
-	deliveryOrder, err := h.deliveryService.UpdateDeliveryOrder(c.Request.Context(), publicID, &req, strconv.FormatInt(user.ID, 10))
+	deliveryOrder, err := h.deliveryService.UpdateDeliveryOrder(c.Request.Context(), publicID, &req, user.ID)
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -183,7 +183,7 @@ func (h *DeliveryHandler) AssignShipperToOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.deliveryService.AssignShipperToOrder(c.Request.Context(), orderID, &req, strconv.FormatInt(user.ID, 10))
+	err = h.deliveryService.AssignShipperToOrder(c.Request.Context(), orderID, &req, user.ID)
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -223,7 +223,7 @@ func (h *DeliveryHandler) SplitOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.deliveryService.SplitOrder(c.Request.Context(), orderID, &req, strconv.FormatInt(user.ID, 10))
+	err = h.deliveryService.SplitOrder(c.Request.Context(), orderID, &req, user.ID)
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -295,7 +295,7 @@ func (h *DeliveryHandler) UpdateDeliveryStatus(c *gin.Context) {
 	}
 
 	status := model.DeliveryStatus(req.Status)
-	deliveryOrder, err := h.deliveryService.UpdateDeliveryStatus(c.Request.Context(), deliveryID, status, req.Notes, strconv.FormatInt(user.ID, 10))
+	deliveryOrder, err := h.deliveryService.UpdateDeliveryStatus(c.Request.Context(), deliveryID, status, req.Notes, user.ID)
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)

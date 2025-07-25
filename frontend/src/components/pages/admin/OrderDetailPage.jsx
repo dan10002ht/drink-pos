@@ -323,14 +323,51 @@ const OrderDetailPage = () => {
                       {formatCurrency(order.subtotal)}
                     </Text>
                   </HStack>
+
+                  {/* Discount Section */}
                   {order.discount_amount > 0 && (
-                    <HStack justify="space-between">
-                      <Text>Giảm giá:</Text>
-                      <Text fontWeight="medium" color="green.600">
-                        -{formatCurrency(order.discount_amount)}
-                      </Text>
-                    </HStack>
+                    <>
+                      {/* Discount Code */}
+                      {order.discount_code && (
+                        <HStack justify="space-between">
+                          <Text>Mã giảm giá ({order.discount_code}):</Text>
+                          <Text fontWeight="medium" color="green.600">
+                            {order.discount_type === "percentage"
+                              ? `-${order.discount_amount}%`
+                              : `-${formatCurrency(order.discount_amount)}`}
+                          </Text>
+                        </HStack>
+                      )}
+
+                      {/* Manual Discount */}
+                      {!order.discount_code && (
+                        <HStack justify="space-between">
+                          <Text>Giảm giá thủ công:</Text>
+                          <Text fontWeight="medium" color="green.600">
+                            {order.discount_type === "percentage"
+                              ? `(-${order.discount_amount}%) -${formatCurrency(
+                                  (order.subtotal * order.discount_amount) / 100
+                                )}`
+                              : `-${formatCurrency(order.discount_amount)}`}
+                          </Text>
+                        </HStack>
+                      )}
+                    </>
                   )}
+
+                  {/* Shipping Fee */}
+                  {order.shipping_fee > 0 && (
+                    <>
+                      <Divider />
+                      <HStack justify="space-between">
+                        <Text>Phí vận chuyển:</Text>
+                        <Text fontWeight="medium" color="orange.600">
+                          +{formatCurrency(order.shipping_fee)}
+                        </Text>
+                      </HStack>
+                    </>
+                  )}
+
                   <Divider />
                   <HStack justify="space-between">
                     <Text fontSize="lg" fontWeight="bold">
