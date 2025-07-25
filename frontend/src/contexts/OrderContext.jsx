@@ -24,7 +24,11 @@ export const OrderProvider = ({
         customer_email: initialData.customer_email || "",
         payment_method: initialData.payment_method || "cash",
         discount_code: initialData.discount_code || "",
+        discount_type: initialData.discount_type || null,
+        discount_amount: initialData.discount_amount || 0,
         discount_note: initialData.discount_note || "",
+        manual_discount_amount: initialData.manual_discount_amount || 0,
+        shipping_fee: initialData.shipping_fee || 0,
         notes: initialData.notes || "",
         items: initialData.items?.map((item) => ({
           variant_id: item.variant_id || "",
@@ -46,7 +50,11 @@ export const OrderProvider = ({
       customer_email: "",
       payment_method: "cash",
       discount_code: "",
+      discount_type: null,
+      discount_amount: 0,
       discount_note: "",
+      manual_discount_amount: 0,
+      shipping_fee: 0,
       notes: "",
       items: [
         {

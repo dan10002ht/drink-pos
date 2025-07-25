@@ -48,7 +48,7 @@ const (
 
 // Order Model
 type Order struct {
-	ID                    string         `json:"-" db:"id"`
+	ID                    int64          `json:"-" db:"id"`
 	PublicID              string         `json:"id" db:"public_id"`
 	OrderNumber           string         `json:"order_number" db:"order_number"`
 	CustomerName          string         `json:"customer_name" db:"customer_name"`
@@ -60,17 +60,19 @@ type Order struct {
 	DiscountType          *DiscountType  `json:"discount_type" db:"discount_type"`
 	DiscountCode          string         `json:"discount_code" db:"discount_code"`
 	DiscountNote          sql.NullString `json:"discount_note" db:"discount_note"`
+	ManualDiscountAmount  float64        `json:"manual_discount_amount" db:"manual_discount_amount"`
+	ShippingFee           float64        `json:"shipping_fee" db:"shipping_fee"`
 	TotalAmount           float64        `json:"total_amount" db:"total_amount"`
 	PaymentMethod         string         `json:"payment_method" db:"payment_method"`
 	PaymentStatus         PaymentStatus  `json:"payment_status" db:"payment_status"`
 	Notes                 sql.NullString `json:"notes" db:"notes"`
-	ShipperID             *string        `json:"shipper_id" db:"shipper_id"`
+	ShipperID             *int64         `json:"shipper_id" db:"shipper_id"`
 	DeliveryStatus        DeliveryStatus `json:"delivery_status" db:"delivery_status"`
 	EstimatedDeliveryTime *time.Time     `json:"estimated_delivery_time" db:"estimated_delivery_time"`
 	ActualDeliveryTime    *time.Time     `json:"actual_delivery_time" db:"actual_delivery_time"`
 	DeliveryNotes         sql.NullString `json:"delivery_notes" db:"delivery_notes"`
-	CreatedBy             string         `json:"created_by" db:"created_by"`
-	UpdatedBy             string         `json:"updated_by" db:"updated_by"`
+	CreatedBy             int64          `json:"created_by" db:"created_by"`
+	UpdatedBy             int64          `json:"updated_by" db:"updated_by"`
 	CreatedAt             time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt             time.Time      `json:"updated_at" db:"updated_at"`
 	ItemsCount            int            `json:"items_count" db:"items_count"`
@@ -86,9 +88,9 @@ type Order struct {
 
 // Order Item Model
 type OrderItem struct {
-	ID          string         `json:"-" db:"id"`
-	OrderID     string         `json:"-" db:"order_id"`
-	VariantID   string         `json:"variant_id" db:"variant_id"`
+	ID          int64          `json:"-" db:"id"`
+	OrderID     int64          `json:"-" db:"order_id"`
+	VariantID   int64          `json:"variant_id" db:"variant_id"`
 	ProductName string         `json:"product_name" db:"product_name"`
 	VariantName string         `json:"variant_name" db:"variant_name"`
 	Quantity    int            `json:"quantity" db:"quantity"`
@@ -104,12 +106,12 @@ type OrderItem struct {
 
 // Order Status History Model
 type OrderStatusHistory struct {
-	ID             string         `json:"-" db:"id"`
-	OrderID        string         `json:"-" db:"order_id"`
+	ID             int64          `json:"-" db:"id"`
+	OrderID        int64          `json:"-" db:"order_id"`
 	Status         OrderStatus    `json:"status" db:"status"`
 	PreviousStatus *OrderStatus   `json:"previous_status" db:"previous_status"`
 	Notes          sql.NullString `json:"notes" db:"notes"`
-	ChangedBy      string         `json:"changed_by" db:"changed_by"`
+	ChangedBy      int64          `json:"changed_by" db:"changed_by"`
 	CreatedAt      time.Time      `json:"created_at" db:"created_at"`
 
 	// Relations
@@ -118,7 +120,7 @@ type OrderStatusHistory struct {
 
 // Discount Code Model
 type DiscountCode struct {
-	ID                string       `json:"-" db:"id"`
+	ID                int64        `json:"-" db:"id"`
 	PublicID          string       `json:"id" db:"public_id"`
 	Code              string       `json:"code" db:"code"`
 	Name              string       `json:"name" db:"name"`
@@ -132,7 +134,7 @@ type DiscountCode struct {
 	IsActive          bool         `json:"is_active" db:"is_active"`
 	ValidFrom         time.Time    `json:"valid_from" db:"valid_from"`
 	ValidUntil        time.Time    `json:"valid_until" db:"valid_until"`
-	CreatedBy         string       `json:"created_by" db:"created_by"`
+	CreatedBy         int64        `json:"created_by" db:"created_by"`
 	CreatedAt         time.Time    `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time    `json:"updated_at" db:"updated_at"`
 
@@ -143,15 +145,19 @@ type DiscountCode struct {
 // Request/Response Models
 
 type CreateOrderRequest struct {
-	CustomerName  string                   `json:"customer_name" validate:"required,max=100"`
-	CustomerPhone string                   `json:"customer_phone" validate:"required,max=20"`
-	CustomerEmail string                   `json:"customer_email" validate:"omitempty,email,max=100"`
-	Items         []CreateOrderItemRequest `json:"items" validate:"required,min=1,dive"`
-	DiscountCode  string                   `json:"discount_code" validate:"omitempty,max=50"`
-	DiscountNote  string                   `json:"discount_note" validate:"omitempty,max=500"`
-	PaymentMethod string                   `json:"payment_method" validate:"omitempty,max=50"`
-	Notes         string                   `json:"notes" validate:"omitempty,max=1000"`
-	ShipperID     *string                  `json:"shipper_id"`
+	CustomerName         string                   `json:"customer_name" validate:"required,max=100"`
+	CustomerPhone        string                   `json:"customer_phone" validate:"required,max=20"`
+	CustomerEmail        string                   `json:"customer_email" validate:"omitempty,email,max=100"`
+	Items                []CreateOrderItemRequest `json:"items" validate:"required,min=1,dive"`
+	DiscountCode         string                   `json:"discount_code" validate:"omitempty,max=50"`
+	DiscountType         *DiscountType            `json:"discount_type" validate:"omitempty"`
+	DiscountAmount       float64                  `json:"discount_amount" validate:"gte=0"`
+	DiscountNote         string                   `json:"discount_note" validate:"omitempty,max=500"`
+	ManualDiscountAmount float64                  `json:"manual_discount_amount" validate:"gte=0"`
+	ShippingFee          float64                  `json:"shipping_fee" validate:"gte=0"`
+	PaymentMethod        string                   `json:"payment_method" validate:"omitempty,max=50"`
+	Notes                string                   `json:"notes" validate:"omitempty,max=1000"`
+	ShipperID            *string                  `json:"shipper_id"`
 }
 
 type CreateOrderItemRequest struct {
@@ -161,15 +167,19 @@ type CreateOrderItemRequest struct {
 }
 
 type UpdateOrderRequest struct {
-	CustomerName  string                   `json:"customer_name" validate:"required,max=100"`
-	CustomerPhone string                   `json:"customer_phone" validate:"required,max=20"`
-	CustomerEmail string                   `json:"customer_email" validate:"omitempty,email,max=100"`
-	Items         []UpdateOrderItemRequest `json:"items" validate:"required,min=1,dive"`
-	DiscountCode  string                   `json:"discount_code" validate:"omitempty,max=50"`
-	DiscountNote  string                   `json:"discount_note" validate:"omitempty,max=500"`
-	PaymentMethod string                   `json:"payment_method" validate:"omitempty,max=50"`
-	Notes         string                   `json:"notes" validate:"omitempty,max=1000"`
-	ShipperID     *string                  `json:"shipper_id"`
+	CustomerName         string                   `json:"customer_name" validate:"required,max=100"`
+	CustomerPhone        string                   `json:"customer_phone" validate:"required,max=20"`
+	CustomerEmail        string                   `json:"customer_email" validate:"omitempty,email,max=100"`
+	Items                []UpdateOrderItemRequest `json:"items" validate:"required,min=1,dive"`
+	DiscountCode         string                   `json:"discount_code" validate:"omitempty,max=50"`
+	DiscountType         *DiscountType            `json:"discount_type" validate:"omitempty"`
+	DiscountAmount       float64                  `json:"discount_amount" validate:"gte=0"`
+	DiscountNote         string                   `json:"discount_note" validate:"omitempty,max=500"`
+	ManualDiscountAmount float64                  `json:"manual_discount_amount" validate:"gte=0"`
+	ShippingFee          float64                  `json:"shipping_fee" validate:"gte=0"`
+	PaymentMethod        string                   `json:"payment_method" validate:"omitempty,max=50"`
+	Notes                string                   `json:"notes" validate:"omitempty,max=1000"`
+	ShipperID            *string                  `json:"shipper_id"`
 }
 
 type UpdateOrderItemRequest struct {
@@ -278,17 +288,17 @@ type DailyOrderStats struct {
 
 // Delivery Order Model
 type DeliveryOrder struct {
-	ID                    string         `json:"-" db:"id"`
+	ID                    int64          `json:"-" db:"id"`
 	PublicID              string         `json:"id" db:"public_id"`
-	OrderID               string         `json:"order_id" db:"order_id"`
-	ShipperID             *string        `json:"shipper_id" db:"shipper_id"`
+	OrderID               int64          `json:"order_id" db:"order_id"`
+	ShipperID             *int64         `json:"shipper_id" db:"shipper_id"`
 	DeliveryNumber        string         `json:"delivery_number" db:"delivery_number"`
 	Status                DeliveryStatus `json:"status" db:"status"`
 	EstimatedDeliveryTime *time.Time     `json:"estimated_delivery_time" db:"estimated_delivery_time"`
 	ActualDeliveryTime    *time.Time     `json:"actual_delivery_time" db:"actual_delivery_time"`
 	DeliveryNotes         sql.NullString `json:"delivery_notes" db:"delivery_notes"`
-	CreatedBy             string         `json:"created_by" db:"created_by"`
-	UpdatedBy             string         `json:"updated_by" db:"updated_by"`
+	CreatedBy             int64          `json:"created_by" db:"created_by"`
+	UpdatedBy             int64          `json:"updated_by" db:"updated_by"`
 	CreatedAt             time.Time      `json:"created_at" db:"created_at"`
 	UpdatedAt             time.Time      `json:"updated_at" db:"updated_at"`
 
@@ -302,9 +312,9 @@ type DeliveryOrder struct {
 
 // Delivery Order Item Model
 type DeliveryOrderItem struct {
-	ID              string    `json:"-" db:"id"`
-	DeliveryOrderID string    `json:"delivery_order_id" db:"delivery_order_id"`
-	OrderItemID     string    `json:"order_item_id" db:"order_item_id"`
+	ID              int64     `json:"-" db:"id"`
+	DeliveryOrderID int64     `json:"delivery_order_id" db:"delivery_order_id"`
+	OrderItemID     int64     `json:"order_item_id" db:"order_item_id"`
 	Quantity        int       `json:"quantity" db:"quantity"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 

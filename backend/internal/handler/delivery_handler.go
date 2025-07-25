@@ -16,13 +16,15 @@ import (
 type DeliveryHandler struct {
 	deliveryService *service.DeliveryService
 	deliveryRepo    *repository.DeliveryRepository
+	userRepo        *repository.UserRepository
 	jwtService      *jwt.JWTService
 }
 
-func NewDeliveryHandler(deliveryService *service.DeliveryService, deliveryRepo *repository.DeliveryRepository, jwtService *jwt.JWTService) *DeliveryHandler {
+func NewDeliveryHandler(deliveryService *service.DeliveryService, deliveryRepo *repository.DeliveryRepository, userRepo *repository.UserRepository, jwtService *jwt.JWTService) *DeliveryHandler {
 	return &DeliveryHandler{
 		deliveryService: deliveryService,
 		deliveryRepo:    deliveryRepo,
+		userRepo:        userRepo,
 		jwtService:      jwtService,
 	}
 }
@@ -35,13 +37,20 @@ func (h *DeliveryHandler) CreateDeliveryOrder(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
-	deliveryOrder, err := h.deliveryService.CreateDeliveryOrder(c.Request.Context(), &req, userID.(string))
+	// Get internal user ID from database using public_id
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
+	if err != nil {
+		response.BadRequest(c, "Invalid user")
+		return
+	}
+
+	deliveryOrder, err := h.deliveryService.CreateDeliveryOrder(c.Request.Context(), &req, strconv.FormatInt(user.ID, 10))
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -85,13 +94,20 @@ func (h *DeliveryHandler) UpdateDeliveryOrder(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
-	deliveryOrder, err := h.deliveryService.UpdateDeliveryOrder(c.Request.Context(), publicID, &req, userID.(string))
+	// Get internal user ID from database using public_id
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
+	if err != nil {
+		response.BadRequest(c, "Invalid user")
+		return
+	}
+
+	deliveryOrder, err := h.deliveryService.UpdateDeliveryOrder(c.Request.Context(), publicID, &req, strconv.FormatInt(user.ID, 10))
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -154,13 +170,20 @@ func (h *DeliveryHandler) AssignShipperToOrder(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
-	err := h.deliveryService.AssignShipperToOrder(c.Request.Context(), orderID, &req, userID.(string))
+	// Get internal user ID from database using public_id
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
+	if err != nil {
+		response.BadRequest(c, "Invalid user")
+		return
+	}
+
+	err = h.deliveryService.AssignShipperToOrder(c.Request.Context(), orderID, &req, strconv.FormatInt(user.ID, 10))
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -187,13 +210,20 @@ func (h *DeliveryHandler) SplitOrder(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
-	err := h.deliveryService.SplitOrder(c.Request.Context(), orderID, &req, userID.(string))
+	// Get internal user ID from database using public_id
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
+	if err != nil {
+		response.BadRequest(c, "Invalid user")
+		return
+	}
+
+	err = h.deliveryService.SplitOrder(c.Request.Context(), orderID, &req, strconv.FormatInt(user.ID, 10))
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)
@@ -251,14 +281,21 @@ func (h *DeliveryHandler) UpdateDeliveryStatus(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
+	// Get internal user ID from database using public_id
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
+	if err != nil {
+		response.BadRequest(c, "Invalid user")
+		return
+	}
+
 	status := model.DeliveryStatus(req.Status)
-	deliveryOrder, err := h.deliveryService.UpdateDeliveryStatus(c.Request.Context(), deliveryID, status, req.Notes, userID.(string))
+	deliveryOrder, err := h.deliveryService.UpdateDeliveryStatus(c.Request.Context(), deliveryID, status, req.Notes, strconv.FormatInt(user.ID, 10))
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)

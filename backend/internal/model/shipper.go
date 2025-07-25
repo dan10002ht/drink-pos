@@ -8,15 +8,15 @@ import (
 
 // Shipper represents a delivery person
 type Shipper struct {
-	ID                  uuid.UUID `json:"id" db:"id"`
-	PublicID            uuid.UUID `json:"public_id" db:"public_id"`
-	Name                string    `json:"name" db:"name"`
-	Phone               string    `json:"phone" db:"phone"`
-	Email               *string   `json:"email" db:"email"`
-	IsActive            bool      `json:"is_active" db:"is_active"`
-	CreatedBy           *uuid.UUID `json:"created_by" db:"created_by"`
-	CreatedAt           time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
+	ID        int64      `json:"-" db:"id"`
+	PublicID  uuid.UUID  `json:"id" db:"public_id"`
+	Name      string     `json:"name" db:"name"`
+	Phone     string     `json:"phone" db:"phone"`
+	Email     *string    `json:"email" db:"email"`
+	IsActive  bool       `json:"is_active" db:"is_active"`
+	CreatedBy *int64     `json:"created_by" db:"created_by"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // Request/Response structs

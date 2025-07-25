@@ -95,7 +95,7 @@ func (r *ProductRepository) UpdateProductByPublicID(ctx context.Context, publicI
 	defer tx.Rollback()
 
 	// Get product ID from public ID
-	var productID string
+	var productID int64
 	err = tx.QueryRowContext(ctx, "SELECT id FROM products WHERE public_id = $1", publicID).Scan(&productID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -179,7 +179,7 @@ func (r *ProductRepository) UpdateProductByPublicID(ctx context.Context, publicI
 	return &product, nil
 }
 
-func (r *ProductRepository) UpdateProduct(ctx context.Context, productID string, req *model.UpdateProductRequest) (*model.Product, error) {
+func (r *ProductRepository) UpdateProduct(ctx context.Context, productID int64, req *model.UpdateProductRequest) (*model.Product, error) {
 	// Start transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -279,12 +279,15 @@ func (r *ProductRepository) ListProducts(ctx context.Context) ([]*model.Product,
 	defer rows.Close()
 
 	// Map to group variants by product
-	productMap := make(map[string]*model.Product)
+	productMap := make(map[int64]*model.Product)
 
 	for rows.Next() {
 		var product model.Product
 		var variant model.Variant
-		var variantID, variantPublicID, variantProductID, variantName, variantDescription, variantPrivateNote sql.NullString
+		var variantID sql.NullInt64
+		var variantPublicID sql.NullString
+		var variantProductID sql.NullInt64
+		var variantName, variantDescription, variantPrivateNote sql.NullString
 		var variantPrice sql.NullFloat64
 		var variantCreatedAt, variantUpdatedAt sql.NullTime
 
@@ -314,9 +317,9 @@ func (r *ProductRepository) ListProducts(ctx context.Context) ([]*model.Product,
 		if existingProduct, exists := productMap[product.ID]; exists {
 			// Product exists, just add variant if it exists
 			if variantID.Valid {
-				variant.ID = variantID.String
+				variant.ID = variantID.Int64
 				variant.PublicID = variantPublicID.String
-				variant.ProductID = variantProductID.String
+				variant.ProductID = variantProductID.Int64
 				variant.Name = variantName.String
 				variant.Description = variantDescription.String
 				variant.PrivateNote = variantPrivateNote.String
@@ -329,9 +332,9 @@ func (r *ProductRepository) ListProducts(ctx context.Context) ([]*model.Product,
 			// New product, add to map
 			product.Variants = []model.Variant{}
 			if variantID.Valid {
-				variant.ID = variantID.String
+				variant.ID = variantID.Int64
 				variant.PublicID = variantPublicID.String
-				variant.ProductID = variantProductID.String
+				variant.ProductID = variantProductID.Int64
 				variant.Name = variantName.String
 				variant.Description = variantDescription.String
 				variant.PrivateNote = variantPrivateNote.String
@@ -416,12 +419,15 @@ func (r *ProductRepository) ListProductsWithPagination(ctx context.Context, filt
 	defer rows.Close()
 
 	// Map to group variants by product
-	productMap := make(map[string]*model.Product)
+	productMap := make(map[int64]*model.Product)
 
 	for rows.Next() {
 		var product model.Product
 		var variant model.Variant
-		var variantID, variantPublicID, variantProductID, variantName, variantDescription, variantPrivateNote sql.NullString
+		var variantID sql.NullInt64
+		var variantPublicID sql.NullString
+		var variantProductID sql.NullInt64
+		var variantName, variantDescription, variantPrivateNote sql.NullString
 		var variantPrice sql.NullFloat64
 		var variantCreatedAt, variantUpdatedAt sql.NullTime
 
@@ -451,9 +457,9 @@ func (r *ProductRepository) ListProductsWithPagination(ctx context.Context, filt
 		if existingProduct, exists := productMap[product.ID]; exists {
 			// Product exists, just add variant if it exists
 			if variantID.Valid {
-				variant.ID = variantID.String
+				variant.ID = variantID.Int64
 				variant.PublicID = variantPublicID.String
-				variant.ProductID = variantProductID.String
+				variant.ProductID = variantProductID.Int64
 				variant.Name = variantName.String
 				variant.Description = variantDescription.String
 				variant.PrivateNote = variantPrivateNote.String
@@ -466,9 +472,9 @@ func (r *ProductRepository) ListProductsWithPagination(ctx context.Context, filt
 			// New product, add to map
 			product.Variants = []model.Variant{}
 			if variantID.Valid {
-				variant.ID = variantID.String
+				variant.ID = variantID.Int64
 				variant.PublicID = variantPublicID.String
-				variant.ProductID = variantProductID.String
+				variant.ProductID = variantProductID.Int64
 				variant.Name = variantName.String
 				variant.Description = variantDescription.String
 				variant.PrivateNote = variantPrivateNote.String
@@ -500,7 +506,7 @@ func (r *ProductRepository) ListProductsWithPagination(ctx context.Context, filt
 
 	// Build ordered product list
 	for orderRows.Next() {
-		var productID string
+		var productID int64
 		err := orderRows.Scan(&productID)
 		if err != nil {
 			return nil, err
@@ -626,7 +632,7 @@ func (r *ProductRepository) GetProductByPublicID(ctx context.Context, publicID s
 	return &product, nil
 }
 
-func (r *ProductRepository) GetProductByID(ctx context.Context, id string) (*model.Product, error) {
+func (r *ProductRepository) GetProductByID(ctx context.Context, id int64) (*model.Product, error) {
 	// Get product
 	var product model.Product
 	productQuery := `

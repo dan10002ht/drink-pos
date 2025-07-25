@@ -55,6 +55,69 @@ func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) GetByPublicID(publicID string) (*model.User, error) {
+	query := `
+		SELECT id, public_id, username, email, password_hash, full_name, role, is_active, created_at, updated_at
+		FROM users 
+		WHERE public_id = $1 AND is_active = true
+	`
+
+	var user model.User
+	err := r.db.QueryRow(query, publicID).Scan(
+		&user.ID,
+		&user.PublicID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FullName,
+		&user.Role,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *UserRepository) GetByID(id int64) (*model.User, error) {
+	query := `
+		SELECT id, public_id, username, email, password_hash, full_name, role, is_active, created_at, updated_at, phone
+		FROM users 
+		WHERE id = $1 AND is_active = true
+	`
+
+	var user model.User
+	err := r.db.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.PublicID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FullName,
+		&user.Role,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+		&user.Phone,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 // FindOrCreateUserByInfo tìm user theo phone hoặc email, nếu không có thì tạo user guest mới
 func (r *UserRepository) FindOrCreateUserByInfo(fullName, phone, email string) (*model.User, error) {
 	var user model.User

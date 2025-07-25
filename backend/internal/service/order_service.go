@@ -25,7 +25,7 @@ func NewOrderService(orderRepo *repository.OrderRepository, userRepo *repository
 }
 
 // CreateOrder creates a new order
-func (s *OrderService) CreateOrder(ctx context.Context, req *model.CreateOrderRequest, userID string) (*model.Order, error) {
+func (s *OrderService) CreateOrder(ctx context.Context, req *model.CreateOrderRequest, userID int64) (*model.Order, error) {
 	// Validate request
 	if err := s.validateCreateOrderRequest(req); err != nil {
 		fmt.Println("Error validateCreateOrderRequest:", err)
@@ -33,7 +33,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *model.CreateOrderRe
 	}
 
 	// Nếu userID rỗng, tìm hoặc tạo user guest
-	if userID == "" {
+	if userID == 0 {
 		user, err := s.userRepo.FindOrCreateUserByInfo(req.CustomerName, req.CustomerPhone, req.CustomerEmail)
 		if err != nil {
 			return nil, err
@@ -71,7 +71,7 @@ func (s *OrderService) GetOrderByID(ctx context.Context, publicID string) (*mode
 }
 
 // UpdateOrderStatus updates order status
-func (s *OrderService) UpdateOrderStatus(ctx context.Context, publicID string, req *model.UpdateOrderStatusRequest, userID string) (*model.Order, error) {
+func (s *OrderService) UpdateOrderStatus(ctx context.Context, publicID string, req *model.UpdateOrderStatusRequest, userID int64) (*model.Order, error) {
 	// Validate status transition
 	if err := s.validateStatusTransition(ctx, publicID, req.Status); err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, publicID string, r
 }
 
 // UpdateOrder updates an existing order
-func (s *OrderService) UpdateOrder(ctx context.Context, publicID string, req *model.UpdateOrderRequest, userID string) (*model.Order, error) {
+func (s *OrderService) UpdateOrder(ctx context.Context, publicID string, req *model.UpdateOrderRequest, userID int64) (*model.Order, error) {
 	return s.orderRepo.UpdateOrder(ctx, publicID, req, userID)
 }
 
@@ -148,13 +148,19 @@ func (s *OrderService) validateCreateOrderRequest(req *model.CreateOrderRequest)
 		return model.NewValidationError("items", "Phải có ít nhất 1 sản phẩm trong đơn hàng")
 	}
 
-	// Check for duplicate variants
-	variantMap := make(map[string]bool)
-	for _, item := range req.Items {
-		if variantMap[item.VariantID] {
-			return model.NewValidationError("items", "Không được chọn trùng sản phẩm")
+	// Validate discount logic
+	if req.DiscountCode != "" && req.ManualDiscountAmount > 0 {
+		return model.NewValidationError("discount", "Không thể áp dụng cả mã giảm giá và giảm giá thủ công cùng lúc")
+	}
+
+	// Validate manual discount
+	if req.ManualDiscountAmount > 0 {
+		if req.DiscountType == nil {
+			return model.NewValidationError("discount_type", "Phải chọn loại giảm giá khi áp dụng giảm giá thủ công")
 		}
-		variantMap[item.VariantID] = true
+		if req.DiscountAmount <= 0 {
+			return model.NewValidationError("discount_amount", "Giá trị giảm giá phải lớn hơn 0")
+		}
 	}
 
 	return nil

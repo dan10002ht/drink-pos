@@ -1,7 +1,7 @@
 -- 005_create_ingredients_table.up.sql
 
 CREATE TABLE IF NOT EXISTS ingredients (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id BIGSERIAL PRIMARY KEY,
     public_id UUID UNIQUE NOT NULL DEFAULT uuid_generate_v4(),
     name VARCHAR(200) NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,

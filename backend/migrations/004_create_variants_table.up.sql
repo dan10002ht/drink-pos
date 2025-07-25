@@ -1,9 +1,9 @@
 -- 004_create_variants_table.up.sql
 
 CREATE TABLE IF NOT EXISTS variants (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id BIGSERIAL PRIMARY KEY,
     public_id UUID UNIQUE NOT NULL DEFAULT uuid_generate_v4(),
-    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     private_note TEXT,

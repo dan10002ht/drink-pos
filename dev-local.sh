@@ -449,13 +449,23 @@ rollback_migrations() {
     print_status "Copying migration files to PostgreSQL container..."
     
     # Nếu có shipping system rollback:
-    if [ -f backend/migrations/009_enhance_shipping_system.down.sql ]; then
-        docker cp backend/migrations/009_enhance_shipping_system.down.sql food_pos_postgres_dev:/tmp/
+    if [ -f backend/migrations/011_enhance_shipping_system.down.sql ]; then
+        docker cp backend/migrations/011_enhance_shipping_system.down.sql food_pos_postgres_dev:/tmp/
     fi
     
     # Nếu có shippers rollback:
-    if [ -f backend/migrations/008_create_shippers.down.sql ]; then
-        docker cp backend/migrations/008_create_shippers.down.sql food_pos_postgres_dev:/tmp/
+    if [ -f backend/migrations/010_create_shippers.down.sql ]; then
+        docker cp backend/migrations/010_create_shippers.down.sql food_pos_postgres_dev:/tmp/
+    fi
+    
+    # Nếu có shipping fee rollback:
+    if [ -f backend/migrations/009_add_shipping_fee.down.sql ]; then
+        docker cp backend/migrations/009_add_shipping_fee.down.sql food_pos_postgres_dev:/tmp/
+    fi
+    
+    # Nếu có manual discount amount rollback:
+    if [ -f backend/migrations/008_add_manual_discount_amount.down.sql ]; then
+        docker cp backend/migrations/008_add_manual_discount_amount.down.sql food_pos_postgres_dev:/tmp/
     fi
     
     docker cp backend/migrations/007_create_orders_table.down.sql food_pos_postgres_dev:/tmp/
@@ -467,14 +477,24 @@ rollback_migrations() {
     docker cp backend/migrations/001_create_enums.down.sql food_pos_postgres_dev:/tmp/
     
     # Run rollbacks in reverse order
-    if [ -f backend/migrations/009_enhance_shipping_system.down.sql ]; then
-        print_status "Rolling back migration: 009_enhance_shipping_system.down.sql"
-        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/009_enhance_shipping_system.down.sql
+    if [ -f backend/migrations/011_enhance_shipping_system.down.sql ]; then
+        print_status "Rolling back migration: 011_enhance_shipping_system.down.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/011_enhance_shipping_system.down.sql
     fi
     
-    if [ -f backend/migrations/008_create_shippers.down.sql ]; then
-        print_status "Rolling back migration: 008_create_shippers.down.sql"
-        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/008_create_shippers.down.sql
+    if [ -f backend/migrations/010_create_shippers.down.sql ]; then
+        print_status "Rolling back migration: 010_create_shippers.down.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/010_create_shippers.down.sql
+    fi
+    
+    if [ -f backend/migrations/009_add_shipping_fee.down.sql ]; then
+        print_status "Rolling back migration: 009_add_shipping_fee.down.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/009_add_shipping_fee.down.sql
+    fi
+    
+    if [ -f backend/migrations/008_add_manual_discount_amount.down.sql ]; then
+        print_status "Rolling back migration: 008_add_manual_discount_amount.down.sql"
+        docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/008_add_manual_discount_amount.down.sql
     fi
     
     print_status "Rolling back migration: 007_create_orders_table.down.sql"
@@ -604,11 +624,21 @@ case "${1:-}" in
     "migrate")
         run_migrations
         ;;
+    "migrate-discount")
+        print_status "Running discount system migration..."
+        if [ -f backend/migrations/008_add_manual_discount_amount.up.sql ]; then
+            docker cp backend/migrations/008_add_manual_discount_amount.up.sql food_pos_postgres_dev:/tmp/
+            docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/008_add_manual_discount_amount.up.sql
+            print_success "Discount system migration completed!"
+        else
+            print_error "Discount system migration file not found!"
+        fi
+        ;;
     "migrate-shipping")
         print_status "Running shipping system migration..."
-        if [ -f backend/migrations/009_enhance_shipping_system.up.sql ]; then
-            docker cp backend/migrations/009_enhance_shipping_system.up.sql food_pos_postgres_dev:/tmp/
-            docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/009_enhance_shipping_system.up.sql
+        if [ -f backend/migrations/009_add_shipping_fee.up.sql ]; then
+            docker cp backend/migrations/009_add_shipping_fee.up.sql food_pos_postgres_dev:/tmp/
+            docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -d food_pos -f /tmp/009_add_shipping_fee.up.sql
             print_success "Shipping system migration completed!"
         else
             print_error "Shipping system migration file not found!"
@@ -635,6 +665,7 @@ case "${1:-}" in
         echo "  status    - Show service status"
         echo "  cleanup   - Clean up everything"
         echo "  migrate   - Run database migrations"
+        echo "  migrate-discount - Run discount system migration only"
         echo "  migrate-shipping - Run shipping system migration only"
         echo "  rollback  - Rollback database migrations"
         echo "  seed      - Seed database"

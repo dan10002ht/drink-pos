@@ -142,7 +142,7 @@ func (s *ProductService) UpdateProductByPublicID(ctx context.Context, publicID s
 	return product, nil
 }
 
-func (s *ProductService) UpdateProduct(ctx context.Context, productID string, req *model.UpdateProductRequest) (*model.Product, error) {
+func (s *ProductService) UpdateProduct(ctx context.Context, productID int64, req *model.UpdateProductRequest) (*model.Product, error) {
 	// Validate request
 	if req.Name == "" {
 		return nil, &ValidationError{Message: "Product name is required"}
@@ -216,7 +216,7 @@ func (s *ProductService) GetProductByPublicID(ctx context.Context, publicID stri
 	return s.productRepo.GetProductByPublicID(ctx, publicID)
 }
 
-func (s *ProductService) GetProductByID(ctx context.Context, id string) (*model.Product, error) {
+func (s *ProductService) GetProductByID(ctx context.Context, id int64) (*model.Product, error) {
 	return s.productRepo.GetProductByID(ctx, id)
 }
 

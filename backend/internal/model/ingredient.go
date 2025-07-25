@@ -5,7 +5,7 @@ import (
 )
 
 type Ingredient struct {
-	ID        string    `json:"-" db:"id"`
+	ID        int64     `json:"-" db:"id"`
 	PublicID  string    `json:"id" db:"public_id"`
 	Name      string    `json:"name" db:"name"`
 	UnitPrice float64   `json:"unit_price" db:"unit_price"`
@@ -27,13 +27,13 @@ type UpdateIngredientRequest struct {
 }
 
 type VariantIngredient struct {
-	ID           string    `json:"-" db:"id"`
-	VariantID    string    `json:"-" db:"variant_id"`
-	IngredientID string    `json:"-" db:"ingredient_id"`
-	Quantity     float64   `json:"quantity" db:"quantity"`
+	ID           int64      `json:"-" db:"id"`
+	VariantID    int64      `json:"-" db:"variant_id"`
+	IngredientID int64      `json:"-" db:"ingredient_id"`
+	Quantity     float64    `json:"quantity" db:"quantity"`
 	Ingredient   Ingredient `json:"ingredient" db:"ingredient"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt    time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 type CreateVariantIngredientRequest struct {

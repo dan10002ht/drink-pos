@@ -25,11 +25,11 @@ func NewOrderRepository(db *sqlx.DB) *OrderRepository {
 }
 
 // Helper: get real shipper id from public_id
-func (r *OrderRepository) getShipperDBID(ctx context.Context, publicID *string) (*string, error) {
+func (r *OrderRepository) getShipperDBID(ctx context.Context, publicID *string) (*int64, error) {
 	if publicID == nil || *publicID == "" {
 		return nil, nil
 	}
-	var dbID string
+	var dbID int64
 	err := r.db.QueryRowContext(ctx, "SELECT id FROM shippers WHERE public_id = $1", *publicID).Scan(&dbID)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (r *OrderRepository) getShipperDBID(ctx context.Context, publicID *string) 
 }
 
 // CreateOrder creates a new order with items
-func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrderRequest, userID string) (*model.Order, error) {
+func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrderRequest, userID int64) (*model.Order, error) {
 	// Start transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -51,27 +51,31 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 	orderQuery := `
 		INSERT INTO orders (
 			customer_name, customer_phone, customer_email, 
-			discount_code, discount_note, payment_method, notes, created_by, updated_by, items_count, shipper_id
+			discount_code, discount_type, discount_amount, discount_note, manual_discount_amount, shipping_fee,
+			payment_method, notes, created_by, updated_by, items_count, shipper_id
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id, public_id, order_number, customer_name, customer_phone, customer_email,
-			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
+			status, subtotal, discount_amount, discount_type, discount_code, discount_note, manual_discount_amount, shipping_fee,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
 			created_at, updated_at, items_count, shipper_id
 	`
-	var dbShipperID *string
+	var dbShipperID *int64
 	if req.ShipperID != nil && *req.ShipperID != "" {
 		dbShipperID, err = r.getShipperDBID(ctx, req.ShipperID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid shipper_id: %w", err)
 		}
 	}
+
+
 	err = tx.QueryRowContext(ctx, orderQuery,
 		req.CustomerName, req.CustomerPhone, req.CustomerEmail,
-		req.DiscountCode, req.DiscountNote, req.PaymentMethod, req.Notes, userID, userID, len(req.Items), dbShipperID,
+		req.DiscountCode, req.DiscountType, req.DiscountAmount, req.DiscountNote, req.ManualDiscountAmount, req.ShippingFee,
+		req.PaymentMethod, req.Notes, userID, userID, len(req.Items), dbShipperID,
 	).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
-		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
+		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote, &order.ManualDiscountAmount, &order.ShippingFee,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
 		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount, &order.ShipperID,
 	)
@@ -136,15 +140,17 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 		SET subtotal = $1, total_amount = $2, updated_at = CURRENT_TIMESTAMP, updated_by = $3, items_count = $4, shipper_id = $5
 		WHERE id = $6
 		RETURNING id, public_id, order_number, customer_name, customer_phone, customer_email,
-			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
+			status, subtotal, discount_amount, discount_type, discount_code, discount_note, manual_discount_amount, shipping_fee,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
 			created_at, updated_at, items_count, shipper_id
 	`
-	totalAmount := subtotal
-	fmt.Println("áaaa", subtotal, totalAmount, userID, len(req.Items), order.ShipperID)
-	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userID, len(req.Items), order.ShipperID, order.ID).Scan(
+	// Calculate total amount considering discounts and shipping fee
+	totalDiscount := order.DiscountAmount + order.ManualDiscountAmount
+	totalAmount := math.Max(0, subtotal-totalDiscount+order.ShippingFee)
+	
+	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userIDInt, len(req.Items), order.ShipperID, order.ID).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
-		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
+		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote, &order.ManualDiscountAmount, &order.ShippingFee,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
 		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount, &order.ShipperID,
 	)
@@ -176,7 +182,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*m
 	var shipper model.Shipper
 	orderQuery := `
 		SELECT o.id, o.public_id, o.order_number, o.customer_name, o.customer_phone, o.customer_email,
-			o.status, o.subtotal, o.discount_amount, o.discount_type, o.discount_code, o.discount_note,
+			o.status, o.subtotal, o.discount_amount, o.discount_type, o.discount_code, o.discount_note, o.manual_discount_amount, o.shipping_fee,
 			o.total_amount, o.payment_method, o.payment_status, o.notes, o.created_by, o.updated_by,
 			o.created_at, o.updated_at, o.shipper_id,
 			s.public_id, s.name, s.phone, s.email, s.is_active
@@ -184,7 +190,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*m
 		LEFT JOIN shippers s ON o.shipper_id = s.id
 		WHERE o.public_id = $1
 	`
-	var shipperID sql.NullString
+	var shipperID sql.NullInt64
 	var shipperPublicID sql.NullString
 	var shipperName sql.NullString
 	var shipperPhone sql.NullString
@@ -192,7 +198,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*m
 	var shipperIsActive sql.NullBool
 	err := r.db.QueryRowContext(ctx, orderQuery, publicID).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
-		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
+		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote, &order.ManualDiscountAmount, &order.ShippingFee,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
 		&order.CreatedAt, &order.UpdatedAt, &shipperID,
 		&shipperPublicID, &shipperName, &shipperPhone, &shipperEmail, &shipperIsActive,
@@ -275,7 +281,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*m
 }
 
 // UpdateOrderStatus updates order status
-func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, publicID string, status model.OrderStatus, notes string, userID string) (*model.Order, error) {
+func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, publicID string, status model.OrderStatus, notes string, userID int64) (*model.Order, error) {
 	// Start transaction
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -510,7 +516,7 @@ func (r *OrderRepository) ValidateDiscountCode(ctx context.Context, code string,
 }
 
 // applyDiscountCode applies discount to order
-func (r *OrderRepository) applyDiscountCode(ctx context.Context, tx *sqlx.Tx, order *model.Order, code string, userID string) error {
+func (r *OrderRepository) applyDiscountCode(ctx context.Context, tx *sqlx.Tx, order *model.Order, code string, userID int64) error {
 	// Validate discount code
 	validation, err := r.ValidateDiscountCode(ctx, code, order.Subtotal)
 	if err != nil {
@@ -553,7 +559,7 @@ func (r *OrderRepository) applyDiscountCode(ctx context.Context, tx *sqlx.Tx, or
 }
 
 // UpdateOrder updates an existing order and its items
-func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req *model.UpdateOrderRequest, userID string) (*model.Order, error) {
+func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req *model.UpdateOrderRequest, userID int64) (*model.Order, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -561,7 +567,7 @@ func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req 
 	defer tx.Rollback()
 
 	// 1. Lấy order id từ public_id
-	var orderID string
+	var orderID int64
 	err = tx.QueryRowContext(ctx, "SELECT id FROM orders WHERE public_id = $1", publicID).Scan(&orderID)
 	if err != nil {
 		return nil, err
@@ -578,7 +584,7 @@ func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req 
 			created_at, updated_at, items_count, shipper_id
 	`
 	var order model.Order
-	var dbShipperID *string
+	var dbShipperID *int64
 	if req.ShipperID != nil && *req.ShipperID != "" {
 		dbShipperID, err = r.getShipperDBID(ctx, req.ShipperID)
 		if err != nil {

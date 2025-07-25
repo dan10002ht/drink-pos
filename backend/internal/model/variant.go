@@ -5,9 +5,9 @@ import (
 )
 
 type Variant struct {
-	ID          string              `json:"-" db:"id"`
+	ID          int64               `json:"-" db:"id"`
 	PublicID    string              `json:"id" db:"public_id"`
-	ProductID   string              `json:"-" db:"product_id"`
+	ProductID   int64               `json:"-" db:"product_id"`
 	Name        string              `json:"name" db:"name"`
 	Description string              `json:"description" db:"description"`
 	PrivateNote string              `json:"private_note" db:"private_note"`

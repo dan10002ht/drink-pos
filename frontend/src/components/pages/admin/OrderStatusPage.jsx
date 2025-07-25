@@ -110,7 +110,7 @@ const OrderStatusPage = () => {
             >
               <TabList
                 px={{ base: 4, md: 6 }}
-                pt={6}
+                pt={{ base: 4, md: 6 }}
                 overflowX="auto"
                 overflowY="hidden"
               >

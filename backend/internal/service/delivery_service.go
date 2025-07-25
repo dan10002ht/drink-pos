@@ -6,6 +6,7 @@ import (
 	"food-pos-backend/internal/model"
 	"food-pos-backend/internal/repository"
 	"food-pos-backend/internal/ws"
+	"strconv"
 	"time"
 )
 
@@ -121,7 +122,7 @@ func (s *DeliveryService) AssignShipperToOrder(ctx context.Context, orderID stri
 	}
 
 	// Simple assignment
-	err = s.deliveryRepo.AssignShipperToOrder(ctx, order.ID, req.ShipperID, userID)
+	err = s.deliveryRepo.AssignShipperToOrder(ctx, order.PublicID, req.ShipperID, userID)
 	if err != nil {
 		return err
 	}
@@ -163,7 +164,7 @@ func (s *DeliveryService) SplitOrder(ctx context.Context, orderID string, req *m
 
 	// Create delivery orders
 	for _, delivery := range req.Deliveries {
-		delivery.OrderID = order.ID
+		delivery.OrderID = order.PublicID
 		_, err := s.deliveryRepo.CreateDeliveryOrder(ctx, &delivery, userID)
 		if err != nil {
 			return err
@@ -258,13 +259,13 @@ func (s *DeliveryService) createSplitDeliveries(ctx context.Context, orderID str
 	var items []model.DeliveryItemRequest
 	for _, item := range order.Items {
 		items = append(items, model.DeliveryItemRequest{
-			OrderItemID: item.ID,
+			OrderItemID: strconv.FormatInt(item.ID, 10),
 			Quantity:    item.Quantity,
 		})
 	}
 
 	deliveryReq := &model.CreateDeliveryOrderRequest{
-		OrderID:               order.ID,
+		OrderID:               order.PublicID,
 		ShipperID:             req.ShipperID,
 		EstimatedDeliveryTime: req.EstimatedDeliveryTime,
 		DeliveryNotes:         req.DeliveryNotes,

@@ -21,14 +21,12 @@ import { useOrderContext } from "../../contexts/OrderContext";
 import OrderCustomerInfo from "./OrderCustomerInfo";
 import OrderItems from "./OrderItems";
 import OrderDiscount from "./OrderDiscount";
+import OrderShipping from "./OrderShipping";
 import OrderNotes from "./OrderNotes";
 import OrderSummary from "./OrderSummary";
 import OrderInfo from "./OrderInfo";
 import { useFetchApi } from "../../hooks/useFetchApi";
-import {
-  FormControl,
-  FormLabel,
-} from "@chakra-ui/react";
+import { FormControl, FormLabel } from "@chakra-ui/react";
 
 const OrderMutationContent = ({
   // Page props
@@ -145,25 +143,25 @@ const OrderMutationContent = ({
               <VStack spacing={4} align="stretch">
                 <FormControl>
                   <FormLabel>Trạng thái đơn hàng</FormLabel>
-              {isLoadingStatuses ? (
-                <Spinner size="sm" />
-              ) : (
-                <Select
-                  value={
-                    formData.status ||
-                    (mode === "create" ? "pending" : order?.status) ||
-                    ""
-                  }
-                  onChange={handleStatusChange}
+                  {isLoadingStatuses ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Select
+                      value={
+                        formData.status ||
+                        (mode === "create" ? "pending" : order?.status) ||
+                        ""
+                      }
+                      onChange={handleStatusChange}
                       size="md"
-                >
-                  {statuses.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label || s.value}
-                    </option>
-                  ))}
-                </Select>
-              )}
+                    >
+                      {statuses.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label || s.value}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
                 </FormControl>
                 <FormControl>
                   <FormLabel>Shipper</FormLabel>
@@ -177,9 +175,10 @@ const OrderMutationContent = ({
                       size="md"
                     >
                       <option value="">-- Không gán shipper --</option>
-                      {shippers && shippers.length > 0 &&
+                      {shippers &&
+                        shippers.length > 0 &&
                         shippers.map((shipper) => (
-                          <option key={shipper.public_id} value={shipper.public_id}>
+                          <option key={shipper.id} value={shipper.id}>
                             {shipper.name} - {shipper.phone}
                           </option>
                         ))}
@@ -195,6 +194,7 @@ const OrderMutationContent = ({
           <OrderCustomerInfo paymentMethods={paymentMethods} />
           <OrderItems products={products} />
           <OrderDiscount subtotal={subtotal} />
+          <OrderShipping />
           <OrderNotes />
           <OrderSummary itemsWithInfo={itemsWithInfo} subtotal={subtotal} />
         </VStack>

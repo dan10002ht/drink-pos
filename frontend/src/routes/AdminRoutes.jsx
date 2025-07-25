@@ -45,19 +45,19 @@ const AdminRoutes = () => {
         <Route path="products/:productId" element={<EditProductPage />} />
         <Route path="ingredients" element={<IngredientsPage />} />
         <Route path="ingredients/create" element={<CreateIngredientPage />} />
-        <Route
-          path="ingredients/:publicId/edit"
-          element={<EditIngredientPage />}
-        />
+        <Route path="ingredients/:id" element={<EditIngredientPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="orders/create" element={<CreateOrderPage />} />
         <Route path="orders/:id" element={<OrderDetailPage />} />
         <Route path="orders/:id/edit" element={<EditOrderPage />} />
-        <Route path="orders/:id/assign-shipper" element={<AssignShipperPage />} />
+        <Route
+          path="orders/:id/assign-shipper"
+          element={<AssignShipperPage />}
+        />
         <Route path="order-status" element={<OrderStatusPage />} />
         <Route path="shippers" element={<ShipperPage />} />
         <Route path="shippers/create" element={<CreateShipperPage />} />
-        <Route path="shippers/:id/edit" element={<EditShipperPage />} />
+        <Route path="shippers/:id" element={<EditShipperPage />} />
         <Route path="users" element={<UsersPage />} />
 
         <Route path="more" element={<MorePage />} />

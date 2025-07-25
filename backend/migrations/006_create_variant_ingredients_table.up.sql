@@ -1,9 +1,9 @@
 -- 006_create_variant_ingredients_table.up.sql
 
 CREATE TABLE IF NOT EXISTS variant_ingredients (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    variant_id UUID NOT NULL REFERENCES variants(id) ON DELETE CASCADE,
-    ingredient_id UUID NOT NULL REFERENCES ingredients(id),
+    id BIGSERIAL PRIMARY KEY,
+    variant_id BIGINT NOT NULL REFERENCES variants(id) ON DELETE CASCADE,
+    ingredient_id BIGINT NOT NULL REFERENCES ingredients(id),
     quantity DECIMAL(10,2) NOT NULL,
     UNIQUE (variant_id, ingredient_id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

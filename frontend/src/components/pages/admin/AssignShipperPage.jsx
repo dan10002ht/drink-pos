@@ -53,10 +53,7 @@ const AssignShipperPage = () => {
   });
 
   // Fetch available shippers
-  const {
-    data: shippers,
-    isLoading: isLoadingShippers,
-  } = useFetchApi({
+  const { data: shippers, isLoading: isLoadingShippers } = useFetchApi({
     url: "/admin/deliveries/shippers",
     protected: true,
   });
@@ -206,11 +203,12 @@ const AssignShipperPage = () => {
 
               <Box>
                 <Text fontWeight="medium">Sản phẩm:</Text>
-                {order.items && order.items.map((item, index) => (
-                  <Text key={index} fontSize="sm">
-                    {item.quantity}x {item.product_name} - {item.variant_name}
-                  </Text>
-                ))}
+                {order.items &&
+                  order.items.map((item, index) => (
+                    <Text key={index} fontSize="sm">
+                      {item.quantity}x {item.product_name} - {item.variant_name}
+                    </Text>
+                  ))}
               </Box>
             </VStack>
           </CardBody>
@@ -232,13 +230,16 @@ const AssignShipperPage = () => {
                 <Select
                   placeholder="Chọn shipper"
                   value={formData.shipper_id}
-                  onChange={(e) => handleInputChange("shipper_id", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("shipper_id", e.target.value)
+                  }
                 >
-                  {shippers && shippers.map((shipper) => (
-                    <option key={shipper.public_id} value={shipper.public_id}>
-                      {shipper.name} - {shipper.phone}
-                    </option>
-                  ))}
+                  {shippers &&
+                    shippers.map((shipper) => (
+                      <option key={shipper.id} value={shipper.id}>
+                        {shipper.name} - {shipper.phone}
+                      </option>
+                    ))}
                 </Select>
               </FormControl>
 
@@ -247,7 +248,9 @@ const AssignShipperPage = () => {
                 <Select
                   placeholder="Chọn thời gian"
                   value={formData.estimated_delivery_time}
-                  onChange={(e) => handleInputChange("estimated_delivery_time", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("estimated_delivery_time", e.target.value)
+                  }
                 >
                   <option value="30">30 phút</option>
                   <option value="45">45 phút</option>
@@ -265,7 +268,9 @@ const AssignShipperPage = () => {
                 <Textarea
                   placeholder="Ghi chú cho shipper..."
                   value={formData.delivery_notes}
-                  onChange={(e) => handleInputChange("delivery_notes", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("delivery_notes", e.target.value)
+                  }
                   rows={3}
                 />
               </FormControl>
@@ -277,7 +282,9 @@ const AssignShipperPage = () => {
                 <Switch
                   id="split-order"
                   isChecked={formData.split_order}
-                  onChange={(e) => handleInputChange("split_order", e.target.checked)}
+                  onChange={(e) =>
+                    handleInputChange("split_order", e.target.checked)
+                  }
                 />
                 <FormHelperText ml={3}>
                   Chia đơn hàng thành nhiều lần giao nếu cần
@@ -311,4 +318,4 @@ const AssignShipperPage = () => {
   );
 };
 
-export default AssignShipperPage; 
+export default AssignShipperPage;

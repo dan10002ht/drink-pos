@@ -139,10 +139,10 @@ const ShipperPage = () => {
                       </Thead>
                       <Tbody>
                         {shippers.map((shipper) => (
-                          <Tr key={shipper.public_id}>
+                          <Tr key={shipper.id}>
                             <Td>
                               <Text fontSize="sm" fontFamily="mono">
-                                {shipper.public_id.slice(0, 8).toUpperCase()}
+                                {shipper.id.slice(0, 8).toUpperCase()}
                               </Text>
                             </Td>
                             <Td>
@@ -170,9 +170,7 @@ const ShipperPage = () => {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() =>
-                                    navigate(
-                                      `/admin/shippers/${shipper.public_id}`
-                                    )
+                                    navigate(`/admin/shippers/${shipper.id}`)
                                   }
                                   aria-label="Xem chi tiết"
                                 />
@@ -182,7 +180,7 @@ const ShipperPage = () => {
                                   variant="ghost"
                                   onClick={() =>
                                     navigate(
-                                      `/admin/shippers/${shipper.public_id}/edit`
+                                      `/admin/shippers/${shipper.id}/edit`
                                     )
                                   }
                                   aria-label="Chỉnh sửa"
@@ -207,12 +205,12 @@ const ShipperPage = () => {
                 <Box display={{ base: "block", md: "none" }}>
                   <VStack spacing={4} align="stretch">
                     {shippers.map((shipper) => (
-                      <Card key={shipper.public_id} variant="outline">
+                      <Card key={shipper.id} variant="outline">
                         <CardBody>
                           <VStack spacing={3} align="stretch">
                             <HStack justify="space-between">
                               <Text fontSize="sm" fontFamily="mono">
-                                {shipper.public_id.slice(0, 8).toUpperCase()}
+                                {shipper.id.slice(0, 8).toUpperCase()}
                               </Text>
                               <Badge
                                 colorScheme={
@@ -250,9 +248,7 @@ const ShipperPage = () => {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() =>
-                                  navigate(
-                                    `/admin/shippers/${shipper.public_id}`
-                                  )
+                                  navigate(`/admin/shippers/${shipper.id}`)
                                 }
                                 aria-label="Xem chi tiết"
                               />
@@ -261,9 +257,7 @@ const ShipperPage = () => {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() =>
-                                  navigate(
-                                    `/admin/shippers/${shipper.public_id}/edit`
-                                  )
+                                  navigate(`/admin/shippers/${shipper.id}/edit`)
                                 }
                                 aria-label="Chỉnh sửa"
                               />

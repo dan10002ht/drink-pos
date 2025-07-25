@@ -47,7 +47,7 @@ const IngredientCard = ({ ingredient, onView, onEdit, onDelete }) => {
             <IconButton
               size="sm"
               icon={<Icon as={FiEye} />}
-              onClick={() => onView(ingredient.public_id)}
+              onClick={() => onView(ingredient.id)}
               variant="ghost"
               colorScheme="blue"
               aria-label="Xem chi tiết"
@@ -55,7 +55,7 @@ const IngredientCard = ({ ingredient, onView, onEdit, onDelete }) => {
             <IconButton
               size="sm"
               icon={<Icon as={FiEdit} />}
-              onClick={() => onEdit(ingredient.public_id)}
+              onClick={() => onEdit(ingredient.id)}
               variant="ghost"
               colorScheme="teal"
               aria-label="Chỉnh sửa"
@@ -63,7 +63,7 @@ const IngredientCard = ({ ingredient, onView, onEdit, onDelete }) => {
             <IconButton
               size="sm"
               icon={<Icon as={FiTrash2} />}
-              onClick={() => onDelete(ingredient.public_id)}
+              onClick={() => onDelete(ingredient.id)}
               variant="ghost"
               colorScheme="red"
               aria-label="Xóa"
@@ -97,7 +97,7 @@ const IngredientCard = ({ ingredient, onView, onEdit, onDelete }) => {
             <Button
               size="sm"
               leftIcon={<Icon as={FiEye} />}
-              onClick={() => onView(ingredient.public_id)}
+              onClick={() => onView(ingredient.id)}
               variant="outline"
               colorScheme="blue"
             >
@@ -106,7 +106,7 @@ const IngredientCard = ({ ingredient, onView, onEdit, onDelete }) => {
             <Button
               size="sm"
               leftIcon={<Icon as={FiEdit} />}
-              onClick={() => onEdit(ingredient.public_id)}
+              onClick={() => onEdit(ingredient.id)}
               variant="outline"
               colorScheme="teal"
             >
@@ -115,7 +115,7 @@ const IngredientCard = ({ ingredient, onView, onEdit, onDelete }) => {
             <Button
               size="sm"
               leftIcon={<Icon as={FiTrash2} />}
-              onClick={() => onDelete(ingredient.public_id)}
+              onClick={() => onDelete(ingredient.id)}
               variant="outline"
               colorScheme="red"
             >

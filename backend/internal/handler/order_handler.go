@@ -18,13 +18,15 @@ import (
 type OrderHandler struct {
 	orderService *service.OrderService
 	orderRepo    *repository.OrderRepository
+	userRepo     *repository.UserRepository
 	jwtService   *jwt.JWTService
 }
 
-func NewOrderHandler(orderService *service.OrderService, orderRepo *repository.OrderRepository, jwtService *jwt.JWTService) *OrderHandler {
+func NewOrderHandler(orderService *service.OrderService, orderRepo *repository.OrderRepository, userRepo *repository.UserRepository, jwtService *jwt.JWTService) *OrderHandler {
 	return &OrderHandler{
 		orderService: orderService,
 		orderRepo:    orderRepo,
+		userRepo:     userRepo,
 		jwtService:   jwtService,
 	}
 }
@@ -40,7 +42,13 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	userID := ""
 	if v, exists := c.Get("user_id"); exists {
 		if s, ok := v.(string); ok {
-			userID = s
+			// Get internal user ID from database using public_id
+			user, err := h.userRepo.GetByPublicID(s)
+			if err != nil {
+				response.BadRequest(c, "Invalid user")
+				return
+			}
+			userID = user.ID
 		}
 	}
 
@@ -114,8 +122,8 @@ func toOrderItemResponse(item model.OrderItem) OrderItemResponse {
 		notesPtr = &item.Notes.String
 	}
 	return OrderItemResponse{
-		ID:          item.ID,
-		VariantID:   item.VariantID,
+		ID:          strconv.FormatInt(item.ID, 10),
+		VariantID:   strconv.FormatInt(item.VariantID, 10),
 		ProductName: item.ProductName,
 		VariantName: item.VariantName,
 		Quantity:    item.Quantity,
@@ -127,7 +135,44 @@ func toOrderItemResponse(item model.OrderItem) OrderItemResponse {
 	}
 }
 
-func toOrderResponse(order *model.Order) *OrderResponse {
+// Helper method to get user public ID from internal ID
+func (h *OrderHandler) getUserPublicID(internalID int64) string {
+	user, err := h.userRepo.GetByID(internalID)
+	if err != nil {
+		return strconv.FormatInt(internalID, 10) // Fallback to internal ID as string
+	}
+	return user.PublicID
+}
+
+func (h *OrderHandler) toOrderResponse(order *model.Order) *OrderResponse {
+	var notesPtr, discountNotePtr *string
+	if order.Notes.Valid {
+		notesPtr = &order.Notes.String
+	}
+	if order.DiscountNote.Valid {
+		discountNotePtr = &order.DiscountNote.String
+	}
+	var discountTypePtr *string
+	if order.DiscountType != nil {
+		discountTypeStr := string(*order.DiscountType)
+		discountTypePtr = &discountTypeStr
+	}
+	items := make([]OrderItemResponse, 0, len(order.Items))
+	for _, item := range order.Items {
+		items = append(items, toOrderItemResponse(item))
+	}
+	var shipperResp *ShipperResponse
+	if order.Shipper != nil {
+		shipperResp = &ShipperResponse{
+			PublicID: order.Shipper.PublicID.String(),
+			Name:     order.Shipper.Name,
+			Phone:    order.Shipper.Phone,
+			Email:    order.Shipper.Email,
+			IsActive: order.Shipper.IsActive,
+		}
+	}
+
+func (h *OrderHandler) toOrderResponse(order *model.Order) *OrderResponse {
 	var notesPtr, discountNotePtr *string
 	if order.Notes.Valid {
 		notesPtr = &order.Notes.String
@@ -170,8 +215,8 @@ func toOrderResponse(order *model.Order) *OrderResponse {
 		PaymentMethod:  order.PaymentMethod,
 		PaymentStatus:  string(order.PaymentStatus),
 		Notes:          notesPtr,
-		CreatedBy:      order.CreatedBy,
-		UpdatedBy:      order.UpdatedBy,
+		CreatedBy:      h.getUserPublicID(order.CreatedBy),
+		UpdatedBy:      h.getUserPublicID(order.UpdatedBy),
 		CreatedAt:      order.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:      order.UpdatedAt.Format(time.RFC3339),
 		Items:          items,
@@ -196,7 +241,7 @@ func (h *OrderHandler) GetOrderByID(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, toOrderResponse(order), "Order retrieved successfully")
+	response.Success(c, h.toOrderResponse(order), "Order retrieved successfully")
 }
 
 // UpdateOrder updates an order and its items
@@ -224,19 +269,26 @@ func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 		}
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
-	order, err := h.orderService.UpdateOrder(c.Request.Context(), publicID, &req, userID.(string))
+	// Get internal user ID from database using public_id
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
+	if err != nil {
+		response.BadRequest(c, "Invalid user")
+		return
+	}
+
+	order, err := h.orderService.UpdateOrder(c.Request.Context(), publicID, &req, user.ID)
 	if err != nil {
 		response.InternalServerError(c, "Failed to update order: "+err.Error())
 		return
 	}
 
-	response.Success(c, toOrderResponse(order), "Order updated successfully")
+	response.Success(c, h.toOrderResponse(order), "Order updated successfully")
 }
 
 // UpdateOrderStatus updates order status
@@ -254,14 +306,21 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 	}
 
 	// Get user ID from context
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
+	// Get internal user ID from database using public_id
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
+	if err != nil {
+		response.BadRequest(c, "Invalid user")
+		return
+	}
+
 	// Update status
-	order, err := h.orderService.UpdateOrderStatus(c.Request.Context(), publicID, &req, userID.(string))
+	order, err := h.orderService.UpdateOrderStatus(c.Request.Context(), publicID, &req, user.ID)
 	if err != nil {
 		if validationErr, ok := err.(*model.ValidationError); ok {
 			response.BadRequest(c, validationErr.Message)

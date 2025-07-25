@@ -21,7 +21,7 @@ func NewShipperService(shipperRepo *repository.ShipperRepository) *ShipperServic
 }
 
 // CreateShipper creates a new shipper
-func (s *ShipperService) CreateShipper(ctx context.Context, req *model.CreateShipperRequest, createdBy uuid.UUID) (*model.Shipper, error) {
+func (s *ShipperService) CreateShipper(ctx context.Context, req *model.CreateShipperRequest, createdBy int64) (*model.Shipper, error) {
 	shipper := &model.Shipper{
 		PublicID:  uuid.New(),
 		Name:      req.Name,
@@ -42,8 +42,12 @@ func (s *ShipperService) CreateShipper(ctx context.Context, req *model.CreateShi
 }
 
 // GetShipper gets shipper by public ID
-func (s *ShipperService) GetShipper(ctx context.Context, publicID uuid.UUID) (*model.Shipper, error) {
-	return s.shipperRepo.GetShipperByPublicID(ctx, publicID)
+func (s *ShipperService) GetShipper(ctx context.Context, publicID string) (*model.Shipper, error) {
+	uuid, err := uuid.Parse(publicID)
+	if err != nil {
+		return nil, err
+	}
+	return s.shipperRepo.GetShipperByPublicID(ctx, uuid)
 }
 
 // ListShippers lists shippers with pagination and filters
@@ -65,8 +69,13 @@ func (s *ShipperService) ListShippers(ctx context.Context, filters map[string]in
 }
 
 // UpdateShipper updates shipper
-func (s *ShipperService) UpdateShipper(ctx context.Context, publicID uuid.UUID, req *model.UpdateShipperRequest, updatedBy uuid.UUID) (*model.Shipper, error) {
-	shipper, err := s.shipperRepo.GetShipperByPublicID(ctx, publicID)
+func (s *ShipperService) UpdateShipper(ctx context.Context, publicID string, req *model.UpdateShipperRequest, updatedBy int64) (*model.Shipper, error) {
+	uuid, err := uuid.Parse(publicID)
+	if err != nil {
+		return nil, err
+	}
+	
+	shipper, err := s.shipperRepo.GetShipperByPublicID(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +104,13 @@ func (s *ShipperService) UpdateShipper(ctx context.Context, publicID uuid.UUID, 
 }
 
 // DeleteShipper deletes shipper
-func (s *ShipperService) DeleteShipper(ctx context.Context, publicID uuid.UUID) error {
-	shipper, err := s.shipperRepo.GetShipperByPublicID(ctx, publicID)
+func (s *ShipperService) DeleteShipper(ctx context.Context, publicID string) error {
+	uuid, err := uuid.Parse(publicID)
+	if err != nil {
+		return err
+	}
+	
+	shipper, err := s.shipperRepo.GetShipperByPublicID(ctx, uuid)
 	if err != nil {
 		return err
 	}

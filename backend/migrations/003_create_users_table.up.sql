@@ -4,7 +4,7 @@
 CREATE TYPE user_role AS ENUM ('super_admin', 'admin', 'client', 'guest');
 
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id BIGSERIAL PRIMARY KEY,
     public_id UUID UNIQUE NOT NULL DEFAULT uuid_generate_v4(),
     username VARCHAR(50) UNIQUE,
     email VARCHAR(100) UNIQUE,

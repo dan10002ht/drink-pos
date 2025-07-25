@@ -12,8 +12,8 @@ import { useEditApi } from "../../../hooks/useEditApi";
 import useSave from "../../../hooks/useSave";
 
 const EditIngredientContent = () => {
-  const { publicId } = useParams();
-  const { setFormData, validateForm, prepareIngredientData } =
+  const { id } = useParams();
+  const { setFormData, validateForm, prepareIngredientData, formData } =
     useIngredientContext();
 
   // Fetch ingredient data
@@ -22,13 +22,13 @@ const EditIngredientContent = () => {
     isLoading: isLoadingIngredient,
     error: ingredientError,
   } = useFetchApi({
-    url: `/admin/ingredients/${publicId}`,
+    url: `/admin/ingredients/${id}`,
     protected: true,
   });
 
   // Update API mutation
   const updateIngredientMutation = useEditApi({
-    url: `/admin/ingredients/${publicId}`,
+    url: `/admin/ingredients/${id}`,
     protected: true,
   });
 

@@ -21,33 +21,27 @@ func NewIngredientRepository(db *sqlx.DB) *IngredientRepository {
 
 func (r *IngredientRepository) Create(ctx context.Context, ingredient *model.Ingredient) error {
 	query := `
-		INSERT INTO ingredients (id, public_id, name, unit_price, unit, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO ingredients (public_id, name, unit_price, unit, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
 	`
-	
-	ingredient.ID = uuid.New().String()
 	ingredient.PublicID = uuid.New().String()
-	
-	_, err := r.db.ExecContext(ctx, query,
-		ingredient.ID,
+	return r.db.QueryRowContext(ctx, query,
 		ingredient.PublicID,
 		ingredient.Name,
 		ingredient.UnitPrice,
 		ingredient.Unit,
 		ingredient.CreatedAt,
 		ingredient.UpdatedAt,
-	)
-	
-	return err
+	).Scan(&ingredient.ID)
 }
 
-func (r *IngredientRepository) GetByID(ctx context.Context, id string) (*model.Ingredient, error) {
+func (r *IngredientRepository) GetByID(ctx context.Context, id int64) (*model.Ingredient, error) {
 	query := `
 		SELECT id, public_id, name, unit_price, unit, created_at, updated_at
 		FROM ingredients
 		WHERE id = $1
 	`
-	
 	var ingredient model.Ingredient
 	err := r.db.GetContext(ctx, &ingredient, query, id)
 	if err != nil {
@@ -56,7 +50,6 @@ func (r *IngredientRepository) GetByID(ctx context.Context, id string) (*model.I
 		}
 		return nil, err
 	}
-	
 	return &ingredient, nil
 }
 
@@ -113,13 +106,13 @@ func (r *IngredientRepository) Update(ctx context.Context, ingredient *model.Ing
 	return err
 }
 
-func (r *IngredientRepository) Delete(ctx context.Context, id string) error {
+func (r *IngredientRepository) Delete(ctx context.Context, id int64) error {
 	query := `DELETE FROM ingredients WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
 }
 
-func (r *IngredientRepository) GetByVariantID(ctx context.Context, variantID string) ([]*model.VariantIngredient, error) {
+func (r *IngredientRepository) GetByVariantID(ctx context.Context, variantID int64) ([]*model.VariantIngredient, error) {
 	query := `
 		SELECT 
 			vi.id, vi.variant_id, vi.ingredient_id, vi.quantity, vi.created_at, vi.updated_at,
@@ -132,56 +125,49 @@ func (r *IngredientRepository) GetByVariantID(ctx context.Context, variantID str
 		WHERE vi.variant_id = $1
 		ORDER BY i.name
 	`
-	
 	var variantIngredients []*model.VariantIngredient
 	err := r.db.SelectContext(ctx, &variantIngredients, query, variantID)
 	if err != nil {
 		return nil, err
 	}
-	
 	return variantIngredients, nil
 }
 
-func (r *IngredientRepository) AddToVariant(ctx context.Context, variantID string, ingredientID string, quantity float64) error {
+func (r *IngredientRepository) AddToVariant(ctx context.Context, variantID int64, ingredientID int64, quantity float64) error {
 	query := `
-		INSERT INTO variant_ingredients (id, variant_id, ingredient_id, quantity, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO variant_ingredients (variant_id, ingredient_id, quantity, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (variant_id, ingredient_id) 
-		DO UPDATE SET quantity = $4, updated_at = $6
+		DO UPDATE SET quantity = $3, updated_at = $5
 	`
-	
 	_, err := r.db.ExecContext(ctx, query,
-		uuid.New().String(),
 		variantID,
 		ingredientID,
 		quantity,
 		time.Now(),
 		time.Now(),
 	)
-	
 	return err
 }
 
-func (r *IngredientRepository) RemoveFromVariant(ctx context.Context, variantID string, ingredientID string) error {
+func (r *IngredientRepository) RemoveFromVariant(ctx context.Context, variantID int64, ingredientID int64) error {
 	query := `DELETE FROM variant_ingredients WHERE variant_id = $1 AND ingredient_id = $2`
 	_, err := r.db.ExecContext(ctx, query, variantID, ingredientID)
 	return err
 }
 
-func (r *IngredientRepository) CalculateVariantCost(ctx context.Context, variantID string) (float64, error) {
+func (r *IngredientRepository) CalculateVariantCost(ctx context.Context, variantID int64) (float64, error) {
 	query := `
 		SELECT COALESCE(SUM(vi.quantity * i.unit_price), 0) as total_cost
 		FROM variant_ingredients vi
 		JOIN ingredients i ON vi.ingredient_id = i.id
 		WHERE vi.variant_id = $1
 	`
-	
 	var totalCost float64
 	err := r.db.GetContext(ctx, &totalCost, query, variantID)
 	if err != nil {
 		return 0, err
 	}
-	
 	return totalCost, nil
 }
 

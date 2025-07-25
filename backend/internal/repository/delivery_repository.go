@@ -21,7 +21,7 @@ func NewDeliveryRepository(db *sqlx.DB) *DeliveryRepository {
 }
 
 // CreateDeliveryOrder creates a new delivery order
-func (r *DeliveryRepository) CreateDeliveryOrder(ctx context.Context, req *model.CreateDeliveryOrderRequest, userID string) (*model.DeliveryOrder, error) {
+func (r *DeliveryRepository) CreateDeliveryOrder(ctx context.Context, req *model.CreateDeliveryOrderRequest, userID int64) (*model.DeliveryOrder, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (r *DeliveryRepository) GetDeliveryOrderByID(ctx context.Context, publicID 
 }
 
 // UpdateDeliveryOrder updates delivery order
-func (r *DeliveryRepository) UpdateDeliveryOrder(ctx context.Context, publicID string, req *model.UpdateDeliveryOrderRequest, userID string) (*model.DeliveryOrder, error) {
+func (r *DeliveryRepository) UpdateDeliveryOrder(ctx context.Context, publicID string, req *model.UpdateDeliveryOrderRequest, userID int64) (*model.DeliveryOrder, error) {
 	tx, err := r.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -331,7 +331,7 @@ func (r *DeliveryRepository) GetDeliveryOrdersByOrderID(ctx context.Context, ord
 }
 
 // AssignShipperToOrder assigns a shipper to an order (simple assignment)
-func (r *DeliveryRepository) AssignShipperToOrder(ctx context.Context, orderID string, shipperID string, userID string) error {
+func (r *DeliveryRepository) AssignShipperToOrder(ctx context.Context, orderID string, shipperID string, userID int64) error {
 	query := `
 		UPDATE orders 
 		SET shipper_id = $1, delivery_status = 'assigned', updated_by = $2, updated_at = CURRENT_TIMESTAMP

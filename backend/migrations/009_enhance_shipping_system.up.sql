@@ -2,26 +2,26 @@
 
 -- Create delivery_orders table for split orders
 CREATE TABLE IF NOT EXISTS delivery_orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id BIGSERIAL PRIMARY KEY,
     public_id UUID UNIQUE NOT NULL DEFAULT uuid_generate_v4(),
-    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    shipper_id UUID REFERENCES shippers(id),
+    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    shipper_id BIGINT REFERENCES shippers(id),
     delivery_number VARCHAR(20) UNIQUE NOT NULL, -- Format: DEL-YYYYMMDD-001
     status delivery_status NOT NULL DEFAULT 'pending',
     estimated_delivery_time TIMESTAMP,
     actual_delivery_time TIMESTAMP,
     delivery_notes TEXT,
-    created_by UUID REFERENCES users(id),
-    updated_by UUID REFERENCES users(id),
+    created_by BIGINT REFERENCES users(id),
+    updated_by BIGINT REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create delivery_order_items table for items in each delivery
 CREATE TABLE IF NOT EXISTS delivery_order_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    delivery_order_id UUID NOT NULL REFERENCES delivery_orders(id) ON DELETE CASCADE,
-    order_item_id UUID NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    delivery_order_id BIGINT NOT NULL REFERENCES delivery_orders(id) ON DELETE CASCADE,
+    order_item_id BIGINT NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
     quantity INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -44,15 +44,11 @@ CREATE SEQUENCE IF NOT EXISTS delivery_number_seq;
 -- Function to generate delivery number
 CREATE OR REPLACE FUNCTION generate_delivery_number()
 RETURNS TRIGGER AS $$
-DECLARE
-    today_date VARCHAR(8);
-    sequence_num INTEGER;
-    new_delivery_number VARCHAR(20);
 BEGIN
-    today_date := TO_CHAR(CURRENT_DATE, 'YYYYMMDD');
-    sequence_num := nextval('delivery_number_seq');
-    new_delivery_number := 'DEL-' || today_date || '-' || LPAD(sequence_num::TEXT, 6, '0');
-    NEW.delivery_number := new_delivery_number;
+    IF NEW.delivery_number IS NULL THEN
+        NEW.delivery_number := 'DEL-' || TO_CHAR(CURRENT_DATE, 'YYYYMMDD') || '-' || 
+                              LPAD(NEXTVAL('delivery_number_seq')::TEXT, 3, '0');
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

@@ -34,7 +34,7 @@ func (r *ShipperRepository) CreateShipper(ctx context.Context, shipper *model.Sh
 }
 
 // GetShipperByID gets shipper by ID
-func (r *ShipperRepository) GetShipperByID(ctx context.Context, id uuid.UUID) (*model.Shipper, error) {
+func (r *ShipperRepository) GetShipperByID(ctx context.Context, id int64) (*model.Shipper, error) {
 	var shipper model.Shipper
 	query := `SELECT * FROM shippers WHERE id = $1`
 	err := r.db.GetContext(ctx, &shipper, query, id)
@@ -116,7 +116,7 @@ func (r *ShipperRepository) UpdateShipper(ctx context.Context, shipper *model.Sh
 }
 
 // DeleteShipper deletes shipper
-func (r *ShipperRepository) DeleteShipper(ctx context.Context, id uuid.UUID) error {
+func (r *ShipperRepository) DeleteShipper(ctx context.Context, id int64) error {
 	query := `DELETE FROM shippers WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err

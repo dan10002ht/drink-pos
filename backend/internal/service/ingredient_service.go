@@ -76,7 +76,6 @@ func (s *IngredientService) DeleteIngredient(ctx context.Context, publicID strin
 	if ingredient == nil {
 		return ErrNotFound
 	}
-
 	return s.ingredientRepo.Delete(ctx, ingredient.ID)
 }
 
@@ -88,7 +87,6 @@ func (s *IngredientService) GetVariantIngredients(ctx context.Context, variantPu
 	if variant == nil {
 		return nil, ErrNotFound
 	}
-
 	return s.ingredientRepo.GetByVariantID(ctx, variant.ID)
 }
 
@@ -100,7 +98,6 @@ func (s *IngredientService) AddIngredientToVariant(ctx context.Context, variantP
 	if variant == nil {
 		return ErrNotFound
 	}
-
 	ingredient, err := s.ingredientRepo.GetByPublicID(ctx, req.IngredientID)
 	if err != nil {
 		return err
@@ -108,14 +105,7 @@ func (s *IngredientService) AddIngredientToVariant(ctx context.Context, variantP
 	if ingredient == nil {
 		return ErrNotFound
 	}
-
-	err = s.ingredientRepo.AddToVariant(ctx, variant.ID, ingredient.ID, req.Quantity)
-	if err != nil {
-		return err
-	}
-
-	// Cost is calculated dynamically, no need to update in database
-	return nil
+	return s.ingredientRepo.AddToVariant(ctx, variant.ID, ingredient.ID, req.Quantity)
 }
 
 func (s *IngredientService) RemoveIngredientFromVariant(ctx context.Context, variantPublicID string, ingredientPublicID string) error {
@@ -126,7 +116,6 @@ func (s *IngredientService) RemoveIngredientFromVariant(ctx context.Context, var
 	if variant == nil {
 		return ErrNotFound
 	}
-
 	ingredient, err := s.ingredientRepo.GetByPublicID(ctx, ingredientPublicID)
 	if err != nil {
 		return err
@@ -134,14 +123,7 @@ func (s *IngredientService) RemoveIngredientFromVariant(ctx context.Context, var
 	if ingredient == nil {
 		return ErrNotFound
 	}
-
-	err = s.ingredientRepo.RemoveFromVariant(ctx, variant.ID, ingredient.ID)
-	if err != nil {
-		return err
-	}
-
-	// Cost is calculated dynamically, no need to update in database
-	return nil
+	return s.ingredientRepo.RemoveFromVariant(ctx, variant.ID, ingredient.ID)
 }
 
 func (s *IngredientService) CalculateVariantCost(ctx context.Context, variantPublicID string) (float64, error) {
@@ -152,6 +134,5 @@ func (s *IngredientService) CalculateVariantCost(ctx context.Context, variantPub
 	if variant == nil {
 		return 0, ErrNotFound
 	}
-
 	return s.ingredientRepo.CalculateVariantCost(ctx, variant.ID)
 } 

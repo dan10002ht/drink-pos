@@ -33,7 +33,7 @@ func (s *AdminService) Login(username, password string) (string, error) {
 	}
 	
 	// Generate JWT token
-	token, err := s.jwtService.GenerateToken(user.ID, user.Username, user.Role)
+	token, err := s.jwtService.GenerateToken(user.PublicID, user.Username, user.Role)
 	if err != nil {
 		return "", errors.New("failed to generate token")
 	}

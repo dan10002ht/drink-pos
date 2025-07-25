@@ -65,9 +65,9 @@ func main() {
 	productHandler := handler.NewProductHandler(productService)
 	variantHandler := handler.NewVariantHandler(variantService)
 	ingredientHandler := handler.NewIngredientHandler(ingredientService)
-	orderHandler := handler.NewOrderHandler(orderService, orderRepo, jwtService)
-	shipperHandler := handler.NewShipperHandler(shipperService)
-	deliveryHandler := handler.NewDeliveryHandler(deliveryService, deliveryRepo, jwtService)
+	orderHandler := handler.NewOrderHandler(orderService, orderRepo, userRepo, jwtService)
+	shipperHandler := handler.NewShipperHandler(shipperService, userRepo)
+	deliveryHandler := handler.NewDeliveryHandler(deliveryService, deliveryRepo, userRepo, jwtService)
 	wsHandler := handler.NewWebSocketHandler(hub)
 
 	// Setup all routes

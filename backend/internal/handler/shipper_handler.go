@@ -4,20 +4,22 @@ import (
 	"strconv"
 
 	"food-pos-backend/internal/model"
+	"food-pos-backend/internal/repository"
 	"food-pos-backend/internal/service"
 	"food-pos-backend/pkg/response"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type ShipperHandler struct {
 	shipperService *service.ShipperService
+	userRepo       *repository.UserRepository
 }
 
-func NewShipperHandler(shipperService *service.ShipperService) *ShipperHandler {
+func NewShipperHandler(shipperService *service.ShipperService, userRepo *repository.UserRepository) *ShipperHandler {
 	return &ShipperHandler{
 		shipperService: shipperService,
+		userRepo:       userRepo,
 	}
 }
 
@@ -29,19 +31,20 @@ func (h *ShipperHandler) CreateShipper(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Unauthorized(c, "User not authenticated")
 		return
 	}
 
-	userUUID, err := uuid.Parse(userID.(string))
+	// Get user by public_id to get internal ID
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
 	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+		response.BadRequest(c, "Invalid user")
 		return
 	}
 
-	shipper, err := h.shipperService.CreateShipper(c.Request.Context(), &req, userUUID)
+	shipper, err := h.shipperService.CreateShipper(c.Request.Context(), &req, user.ID)
 	if err != nil {
 		response.InternalServerError(c, err.Error())
 		return
@@ -52,11 +55,7 @@ func (h *ShipperHandler) CreateShipper(c *gin.Context) {
 
 // GetShipper gets shipper by public ID
 func (h *ShipperHandler) GetShipper(c *gin.Context) {
-	publicID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		response.BadRequest(c, "Invalid shipper ID")
-		return
-	}
+	publicID := c.Param("id")
 
 	shipper, err := h.shipperService.GetShipper(c.Request.Context(), publicID)
 	if err != nil {
@@ -95,11 +94,7 @@ func (h *ShipperHandler) ListShippers(c *gin.Context) {
 
 // UpdateShipper updates shipper
 func (h *ShipperHandler) UpdateShipper(c *gin.Context) {
-	publicID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		response.BadRequest(c, "Invalid shipper ID")
-		return
-	}
+	publicID := c.Param("id")
 
 	var req model.UpdateShipperRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -107,19 +102,20 @@ func (h *ShipperHandler) UpdateShipper(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
+	userPublicID, exists := c.Get("user_id")
 	if !exists {
 		response.Unauthorized(c, "User not authenticated")
 		return
 	}
 
-	userUUID, err := uuid.Parse(userID.(string))
+	// Get user by public_id to get internal ID
+	user, err := h.userRepo.GetByPublicID(userPublicID.(string))
 	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+		response.BadRequest(c, "Invalid user")
 		return
 	}
 
-	shipper, err := h.shipperService.UpdateShipper(c.Request.Context(), publicID, &req, userUUID)
+	shipper, err := h.shipperService.UpdateShipper(c.Request.Context(), publicID, &req, user.ID)
 	if err != nil {
 		response.InternalServerError(c, err.Error())
 		return
@@ -130,13 +126,9 @@ func (h *ShipperHandler) UpdateShipper(c *gin.Context) {
 
 // DeleteShipper deletes shipper
 func (h *ShipperHandler) DeleteShipper(c *gin.Context) {
-	publicID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		response.BadRequest(c, "Invalid shipper ID")
-		return
-	}
+	publicID := c.Param("id")
 
-	err = h.shipperService.DeleteShipper(c.Request.Context(), publicID)
+	err := h.shipperService.DeleteShipper(c.Request.Context(), publicID)
 	if err != nil {
 		response.InternalServerError(c, err.Error())
 		return

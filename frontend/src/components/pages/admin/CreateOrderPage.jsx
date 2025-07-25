@@ -50,14 +50,12 @@ const CreateOrderContent = () => {
     redirectPath: "/admin/orders",
   });
 
-  // Mark as dirty when form changes
-  useEffect(() => {
-    markAsDirty();
-  }, [markAsDirty]);
-
   const products = productsData?.products || [];
   const paymentMethods = paymentMethodsData || [];
 
+  useEffect(() => {
+    markAsDirty();
+  }, [markAsDirty]);
   return (
     <OrderMutationContent
       // Page props
