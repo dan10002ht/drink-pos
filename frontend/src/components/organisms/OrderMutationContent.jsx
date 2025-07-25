@@ -145,25 +145,25 @@ const OrderMutationContent = ({
               <VStack spacing={4} align="stretch">
                 <FormControl>
                   <FormLabel>Trạng thái đơn hàng</FormLabel>
-                  {isLoadingStatuses ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <Select
-                      value={
-                        formData.status ||
-                        (mode === "create" ? "pending" : order?.status) ||
-                        ""
-                      }
-                      onChange={handleStatusChange}
+              {isLoadingStatuses ? (
+                <Spinner size="sm" />
+              ) : (
+                <Select
+                  value={
+                    formData.status ||
+                    (mode === "create" ? "pending" : order?.status) ||
+                    ""
+                  }
+                  onChange={handleStatusChange}
                       size="md"
-                    >
-                      {statuses.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label || s.value}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
+                >
+                  {statuses.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label || s.value}
+                    </option>
+                  ))}
+                </Select>
+              )}
                 </FormControl>
                 <FormControl>
                   <FormLabel>Shipper</FormLabel>

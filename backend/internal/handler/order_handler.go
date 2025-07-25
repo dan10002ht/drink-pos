@@ -75,6 +75,14 @@ type OrderItemResponse struct {
 	UpdatedAt   string  `json:"updated_at"`
 }
 
+type ShipperResponse struct {
+	PublicID string  `json:"public_id"`
+	Name     string  `json:"name"`
+	Phone    string  `json:"phone"`
+	Email    *string `json:"email"`
+	IsActive bool    `json:"is_active"`
+}
+
 type OrderResponse struct {
 	ID             string              `json:"id"`
 	OrderNumber    string              `json:"order_number"`
@@ -97,7 +105,7 @@ type OrderResponse struct {
 	UpdatedAt      string              `json:"updated_at"`
 	Items          []OrderItemResponse `json:"items"`
 	ItemsCount     int                 `json:"items_count"`
-	// ... có thể bổ sung các trường khác nếu cần ...
+	Shipper        *ShipperResponse    `json:"shipper,omitempty"`
 }
 
 func toOrderItemResponse(item model.OrderItem) OrderItemResponse {
@@ -136,6 +144,16 @@ func toOrderResponse(order *model.Order) *OrderResponse {
 	for _, item := range order.Items {
 		items = append(items, toOrderItemResponse(item))
 	}
+	var shipperResp *ShipperResponse
+	if order.Shipper != nil {
+		shipperResp = &ShipperResponse{
+			PublicID: order.Shipper.PublicID.String(),
+			Name:     order.Shipper.Name,
+			Phone:    order.Shipper.Phone,
+			Email:    order.Shipper.Email,
+			IsActive: order.Shipper.IsActive,
+		}
+	}
 	return &OrderResponse{
 		ID:             order.PublicID,
 		OrderNumber:    order.OrderNumber,
@@ -158,6 +176,7 @@ func toOrderResponse(order *model.Order) *OrderResponse {
 		UpdatedAt:      order.UpdatedAt.Format(time.RFC3339),
 		Items:          items,
 		ItemsCount:     order.ItemsCount,
+		Shipper:        shipperResp,
 	}
 }
 

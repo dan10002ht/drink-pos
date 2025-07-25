@@ -93,7 +93,7 @@ const OrderCard = ({ order, refetch }) => {
         <Box bg={itemBgColor} p={3} borderRadius="md">
           <Text fontSize="sm" fontWeight="medium" mb={2}>
             {order.items_count} sản phẩm
-          </Text>
+            </Text>
           {order.items && order.items.slice(0, 2).map((item, index) => (
             <Text key={index} fontSize="sm" color="gray.600">
               {item.quantity}x {item.product_name} - {item.variant_name}
@@ -114,9 +114,9 @@ const OrderCard = ({ order, refetch }) => {
           <HStack spacing={2}>
             {canAssign && (
               <Tooltip label="Assign shipper">
-                <IconButton
-                  size="sm"
-                  colorScheme="blue"
+            <IconButton
+              size="sm"
+              colorScheme="blue"
                   icon={<FiTruck />}
                   onClick={() => navigate(`/admin/orders/${order.id}/assign-shipper`)}
                   aria-label="Assign shipper"
@@ -128,18 +128,18 @@ const OrderCard = ({ order, refetch }) => {
                 size="sm"
                 colorScheme="teal"
                 icon={<FiEye />}
-                onClick={() => navigate(`/admin/orders/${order.id}`)}
+              onClick={() => navigate(`/admin/orders/${order.id}`)}
                 aria-label="View order"
-              />
+            />
             </Tooltip>
             <Tooltip label="Chỉnh sửa">
-              <IconButton
-                size="sm"
-                colorScheme="orange"
+            <IconButton
+              size="sm"
+              colorScheme="orange"
                 icon={<FiEdit />}
-                onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
+              onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
                 aria-label="Edit order"
-              />
+            />
             </Tooltip>
           </HStack>
         </Flex>

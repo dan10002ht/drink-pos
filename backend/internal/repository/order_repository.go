@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -21,6 +22,19 @@ func NewOrderRepository(db *sqlx.DB) *OrderRepository {
 	return &OrderRepository{
 		db: db,
 	}
+}
+
+// Helper: get real shipper id from public_id
+func (r *OrderRepository) getShipperDBID(ctx context.Context, publicID *string) (*string, error) {
+	if publicID == nil || *publicID == "" {
+		return nil, nil
+	}
+	var dbID string
+	err := r.db.QueryRowContext(ctx, "SELECT id FROM shippers WHERE public_id = $1", *publicID).Scan(&dbID)
+	if err != nil {
+		return nil, err
+	}
+	return &dbID, nil
 }
 
 // CreateOrder creates a new order with items
@@ -37,22 +51,29 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 	orderQuery := `
 		INSERT INTO orders (
 			customer_name, customer_phone, customer_email, 
-			discount_code, discount_note, payment_method, notes, created_by, updated_by, items_count
+			discount_code, discount_note, payment_method, notes, created_by, updated_by, items_count, shipper_id
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, public_id, order_number, customer_name, customer_phone, customer_email,
 			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
-			created_at, updated_at, items_count
+			created_at, updated_at, items_count, shipper_id
 	`
+	var dbShipperID *string
+	if req.ShipperID != nil && *req.ShipperID != "" {
+		dbShipperID, err = r.getShipperDBID(ctx, req.ShipperID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid shipper_id: %w", err)
+		}
+	}
 	err = tx.QueryRowContext(ctx, orderQuery,
 		req.CustomerName, req.CustomerPhone, req.CustomerEmail,
-		req.DiscountCode, req.DiscountNote, req.PaymentMethod, req.Notes, userID, userID, len(req.Items),
+		req.DiscountCode, req.DiscountNote, req.PaymentMethod, req.Notes, userID, userID, len(req.Items), dbShipperID,
 	).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
-		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount,
+		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount, &order.ShipperID,
 	)
 	if err != nil {
 		return nil, err
@@ -112,19 +133,20 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 	// Update order with calculated subtotal and total_amount
 	updateOrderQuery := `
 		UPDATE orders 
-		SET subtotal = $1, total_amount = $2, updated_at = CURRENT_TIMESTAMP, updated_by = $3, items_count = $4
-		WHERE id = $5
+		SET subtotal = $1, total_amount = $2, updated_at = CURRENT_TIMESTAMP, updated_by = $3, items_count = $4, shipper_id = $5
+		WHERE id = $6
 		RETURNING id, public_id, order_number, customer_name, customer_phone, customer_email,
 			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
 			total_amount, payment_method, payment_status, notes, created_by, updated_by,
-			created_at, updated_at, items_count
+			created_at, updated_at, items_count, shipper_id
 	`
 	totalAmount := subtotal
-	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userID, len(req.Items), order.ID).Scan(
+	fmt.Println("áaaa", subtotal, totalAmount, userID, len(req.Items), order.ShipperID)
+	err = tx.QueryRowContext(ctx, updateOrderQuery, subtotal, totalAmount, userID, len(req.Items), order.ShipperID, order.ID).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
-		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount,
+		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount, &order.ShipperID,
 	)
 	if err != nil {
 		return nil, err
@@ -149,38 +171,50 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, req *model.CreateOrde
 
 // GetOrderByID gets order by public ID
 func (r *OrderRepository) GetOrderByID(ctx context.Context, publicID string) (*model.Order, error) {
-	// Get order
+	// Get order + shipper (LEFT JOIN)
 	var order model.Order
+	var shipper model.Shipper
 	orderQuery := `
-		SELECT id, public_id, order_number, customer_name, customer_phone, customer_email,
-			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
-			total_amount, payment_method, payment_status, notes, created_by, updated_by,
-			created_at, updated_at, shipper_id
-		FROM orders
-		WHERE public_id = $1
+		SELECT o.id, o.public_id, o.order_number, o.customer_name, o.customer_phone, o.customer_email,
+			o.status, o.subtotal, o.discount_amount, o.discount_type, o.discount_code, o.discount_note,
+			o.total_amount, o.payment_method, o.payment_status, o.notes, o.created_by, o.updated_by,
+			o.created_at, o.updated_at, o.shipper_id,
+			s.public_id, s.name, s.phone, s.email, s.is_active
+		FROM orders o
+		LEFT JOIN shippers s ON o.shipper_id = s.id
+		WHERE o.public_id = $1
 	`
 	var shipperID sql.NullString
+	var shipperPublicID sql.NullString
+	var shipperName sql.NullString
+	var shipperPhone sql.NullString
+	var shipperEmail sql.NullString
+	var shipperIsActive sql.NullBool
 	err := r.db.QueryRowContext(ctx, orderQuery, publicID).Scan(
 		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
 		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
 		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
 		&order.CreatedAt, &order.UpdatedAt, &shipperID,
+		&shipperPublicID, &shipperName, &shipperPhone, &shipperEmail, &shipperIsActive,
 	)
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("order not found")
 		}
 		return nil, err
 	}
-	if shipperID.Valid && shipperID.String != "" {
-		var shipper model.Shipper
-		shipperQuery := `SELECT public_id, name, phone, email, is_active FROM shippers WHERE id = $1`
-		err := r.db.QueryRowContext(ctx, shipperQuery, shipperID.String).Scan(
-			&shipper.PublicID, &shipper.Name, &shipper.Phone, &shipper.Email, &shipper.IsActive,
-		)
-		if err == nil {
-			order.Shipper = &shipper
+	if shipperPublicID.Valid {
+		if uuidVal, err := uuid.Parse(shipperPublicID.String); err == nil {
+			shipper.PublicID = uuidVal
 		}
+		shipper.Name = shipperName.String
+		shipper.Phone = shipperPhone.String
+		if shipperEmail.Valid {
+			shipper.Email = &shipperEmail.String
+		}
+		shipper.IsActive = shipperIsActive.Bool
+		order.Shipper = &shipper
 	}
 
 	// Get order items
@@ -535,16 +569,29 @@ func (r *OrderRepository) UpdateOrder(ctx context.Context, publicID string, req 
 
 	// 2. Update bảng orders
 	updateOrderQuery := `
-		UPDATE orders SET
-			customer_name = $1, customer_phone = $2, customer_email = $3,
-			payment_method = $4, discount_code = $5, discount_note = $6, notes = $7,
-			updated_by = $8, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $9
+		UPDATE orders 
+		SET customer_name = $1, customer_phone = $2, customer_email = $3, discount_code = $4, discount_note = $5, payment_method = $6, notes = $7, updated_by = $8, updated_at = CURRENT_TIMESTAMP, shipper_id = $9
+		WHERE id = $10
+		RETURNING id, public_id, order_number, customer_name, customer_phone, customer_email,
+			status, subtotal, discount_amount, discount_type, discount_code, discount_note,
+			total_amount, payment_method, payment_status, notes, created_by, updated_by,
+			created_at, updated_at, items_count, shipper_id
 	`
-	_, err = tx.ExecContext(ctx, updateOrderQuery,
-		req.CustomerName, req.CustomerPhone, req.CustomerEmail,
-		req.PaymentMethod, req.DiscountCode, req.DiscountNote, req.Notes,
-		userID, orderID,
+	var order model.Order
+	var dbShipperID *string
+	if req.ShipperID != nil && *req.ShipperID != "" {
+		dbShipperID, err = r.getShipperDBID(ctx, req.ShipperID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid shipper_id: %w", err)
+		}
+	}
+	err = tx.QueryRowContext(ctx, updateOrderQuery,
+		req.CustomerName, req.CustomerPhone, req.CustomerEmail, req.DiscountCode, req.DiscountNote, req.PaymentMethod, req.Notes, userID, dbShipperID, orderID,
+	).Scan(
+		&order.ID, &order.PublicID, &order.OrderNumber, &order.CustomerName, &order.CustomerPhone, &order.CustomerEmail,
+		&order.Status, &order.Subtotal, &order.DiscountAmount, &order.DiscountType, &order.DiscountCode, &order.DiscountNote,
+		&order.TotalAmount, &order.PaymentMethod, &order.PaymentStatus, &order.Notes, &order.CreatedBy, &order.UpdatedBy,
+		&order.CreatedAt, &order.UpdatedAt, &order.ItemsCount, &order.ShipperID,
 	)
 	if err != nil {
 		return nil, err

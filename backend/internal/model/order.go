@@ -151,6 +151,7 @@ type CreateOrderRequest struct {
 	DiscountNote  string                   `json:"discount_note" validate:"omitempty,max=500"`
 	PaymentMethod string                   `json:"payment_method" validate:"omitempty,max=50"`
 	Notes         string                   `json:"notes" validate:"omitempty,max=1000"`
+	ShipperID     *string                  `json:"shipper_id"`
 }
 
 type CreateOrderItemRequest struct {
@@ -168,6 +169,7 @@ type UpdateOrderRequest struct {
 	DiscountNote  string                   `json:"discount_note" validate:"omitempty,max=500"`
 	PaymentMethod string                   `json:"payment_method" validate:"omitempty,max=50"`
 	Notes         string                   `json:"notes" validate:"omitempty,max=1000"`
+	ShipperID     *string                  `json:"shipper_id"`
 }
 
 type UpdateOrderItemRequest struct {
